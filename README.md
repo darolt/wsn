@@ -11,9 +11,12 @@ It also implements a modified version of PSO (Particle Swarm Optimization) in or
 
 # Running it
 Choose your settings in the configuration file (config.py), then:
+
 swig -python -shadow -c++ pso.i
+
 python setup.py build_ext --inplace
-python leach.py
+
+python run.py
 
 # Requirements
 All non-trivial requirements (the ones you cannot get via pip install) are inside this repository.
