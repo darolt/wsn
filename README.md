@@ -10,13 +10,11 @@ It basically simulates the communication among nodes and communication with the 
 It also implements a modified version of PSO (Particle Swarm Optimization) in order to schedule sleeping slots to every node at every communication round. This implementation is based on (C. Yu, W. Guo and G. Chen, "Energy-balanced Sleep Scheduling Based on Particle Swarm Optimization in Wireless Sensor Network," 2012 IEEE 26th International Parallel and Distributed Processing Symposium Workshops & PhD Forum, Shanghai, 2012, pp. 1249-1255.), but contains improvements, specially concerning the learning of better solutions.
 
 # Running it
-Choose your settings in the configuration file (config.py), then:
+1 - Choose your settings in the configuration file (config.py)
 
-swig -python -shadow -c++ pso.i
+2 - python setup.py build_ext --inplace
 
-python setup.py build_ext --inplace
-
-python run.py
+3 - python run.py
 
 # Requirements
 All non-trivial requirements (the ones you cannot get via pip install) are inside this repository.
