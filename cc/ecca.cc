@@ -2,11 +2,30 @@
 #include <stdio.h>
 
 Ecca::Ecca(dict_t exclusive, regions_t overlapping,
-         vector<u_int> ids, config_t config)
-    :Optimizer(exclusive, overlapping, ids, config) {
+         vector<u_int> ids, config_t config) {
+
+  regions_ = new Regions(exclusive, overlapping);
+
+  NB_INDIVIDUALS_ = config.first["NB_INDIVIDUALS"];
+  MAX_ITERATIONS_ = config.first["MAX_ITERATIONS"];
+  FITNESS_ALPHA_  = config.second["FITNESS_ALPHA"];
+  FITNESS_BETA_   = config.second["FITNESS_BETA"];
+  WMAX_           = config.second["WMAX"];
+  WMIN_           = config.second["WMIN"];
+  
+  nb_nodes_       = ids.size();
+
+  population_    = vector<individual_t>(NB_INDIVIDUALS_,
+                                         individual_t(nb_nodes_, 0));
+  best_locals_    = vector<individual_t>(NB_INDIVIDUALS_,
+                                         individual_t(nb_nodes_, 0));
+  best_global_    = individual_t(nb_nodes_, 0);
+  best_local_fitness_ = vector<float>(NB_INDIVIDUALS_, 0.0);
+
 }
 
 Ecca::~Ecca() {
+  delete regions_;
 }
 
 void
@@ -42,104 +61,137 @@ Ecca::Reproduction(selected, crossover_rate) {
 }
 
 
-
-
-
-void
-Ecca::Optimize(float_v energies, const vector<u_int> &can_sleep,
-              float total_energy) {
-  uniform_real_distribution<float> distribution(0.0, 1.0);
-  uniform_real_distribution<float> distribution2(-0.5, 0.5);
-
-  // initialize velocity_
-  velocity_ = vector<float_v>(NB_INDIVIDUALS_, float_v(nb_nodes_, 0.0));
-
-  for (u_int individual_idx = 0; individual_idx < NB_INDIVIDUALS_; individual_idx++) {
-    for(u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-      velocity_[individual_idx][gene_idx] = distribution2(generator_);
-    }
-  }
-
-  float recombination_prob, mutation_prob, reduction_rate;
-  for (u_int it = 0; it < MAX_ITERATIONS_; it++) {
-    learning_trace_.push_back(best_global_fitness_);
-    for (u_int individual_idx = 0; individual_idx < NB_INDIVIDUALS_; individual_idx++) {
-      individual_t &individual = individuals_[individual_idx];
-      //acceleration   = WMAX_ - (WMAX_-WMIN_)*it/float(MAX_ITERATIONS_);
-      //phi1 = 1.0 - it/float(MAX_ITERATIONS_);
-      //phi2 = 1.0 - phi1;
-
-      
-      for(u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-        float r1 = distribution(generator_);
-        float r2 = distribution(generator_);
-        float r3 = distribution(generator_);
-
-        int diff_to_global = best_global_[gene_idx] - individual[gene_idx];
-        int diff_to_local  = best_locals_[individual_idx][gene_idx] - individual[gene_idx];
-        velocity_[individual_idx][gene_idx] = acceleration*velocity_[individual_idx][gene_idx] +
-                                              phi1*r1*diff_to_global + 
-                                              phi2*r2*diff_to_local;
-
-        float velocity_norm = 1 / (1 + exp(-velocity_[individual_idx][gene_idx]));
-        //printf("r3: %f, v: %f\n\n", r3, velocity_[individual_idx][gene_idx]);
-        
-        individual[gene_idx] = (r3 < velocity_norm) ? 1 : 0;
-      }
-
-      
-
-      //float r1 = distribution(generator_);
-      //float r2 = distribution(generator_);
-
-      //auto new_individual = individuals_[individual_idx];
-      //Influence(individual, best_locals_[individual_idx],
-      //          new_individual, can_sleep, phi1*r1);
-      //Influence(individual, best_global_, new_individual, can_sleep, phi2*r2);
-      //individual = new_individual;
-      //Move(individual, can_sleep, acceleration);
-    }
-
-    UpdateGenerationFitness(energies, total_energy);
-
-  }
+individual_t
+Optimizer::Run(vector<float> energies, u_int head_id) {
 }
 
 void
-Ecca::Move(individual_t &individual, vector<u_int> can_sleep,
-          float acceleration) {
-
-  u_int nb_changes = u_int(float(can_sleep.size())*acceleration);
-  for(u_int count = 0; count < nb_changes; count++) {
-    uniform_int_distribution<int> distribution(0, can_sleep.size()-1);
-    u_int changed_idx = distribution(generator_);
-    u_int changed_gene = can_sleep[changed_idx];
-
-    // flips gene
-    individual[changed_gene] = (individual[changed_gene] == 0) ? 1 : 0;
-    can_sleep.erase(can_sleep.begin() + changed_idx);
+Optimizer::InitializePopulation(float_v energies, u_int head_id, float total_energy) {
+  uniform_real_distribution<float> distribution(0.0, 1.0);
+  for (auto &individual: population_) {
+    for (u_int node_idx = 0; node_idx < nb_nodes_; node_idx++) {
+      float random = distribution(generator_);
+      if ((ids_[node_idx] == head_id) || (energies[node_idx] == 0)) {
+        // cluster head cannot be put to sleep
+        individual[node_idx] = 0;
+      } else {
+        individual[node_idx] = (random < 0.5) ? 1 : 0;
+      }
+    } 
   }
-
-  return;
+  UpdateGenerationFitness(energies, total_energy);
 }
 
 void
-Ecca::Influence(const individual_t &original_individual,
-               const individual_t &influencer,
-               individual_t &new_individual,
-               vector<u_int> can_sleep,
-               float influence_rate) {
+Optimizer::UpdateGenerationFitness(float_v energies, float total_energy) {
+  for (u_int idx = 0; idx < NB_INDIVIDUALS_; idx++) {
+    auto const &individual = population_[idx];
+    auto fitness_ret = Fitness(individual, energies, total_energy, 0);
+    float individual_fitness = fitness_ret.fitness_value;
+    if (individual_fitness > best_local_fitness_[idx]) {
+      best_locals_[idx] = individual;
+      best_local_fitness_[idx] = individual_fitness;
+    }
+    if (individual_fitness > best_global_fitness_) {
+      best_global_ = individual;
+      best_global_fitness_ = individual_fitness;
+      best_coverage_ = fitness_ret.coverage_info.partial_coverage/
+                       fitness_ret.coverage_info.total_coverage;
+      best_overlapping_ = fitness_ret.coverage_info.partial_overlapping/
+                          fitness_ret.coverage_info.total_overlapping;
+    }
+  }
+}
 
-  uniform_real_distribution<float> distribution(0.0, 1.0);
+fitness_ret_t
+Optimizer::Fitness(const individual_t &individual, vector<float> energies,
+                   float total_energy, char do_print) {
+  vector<u_int> sleep_nodes;
+  float partial_energy = 0.0;
+  vector<u_int> dead_nodes;
+  //float threshold = 0.005;
+  u_int alive_nodes = 0;
+  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
+    // push nodes that are dead
+    if (energies[gene_idx] == 0 ) {
+      dead_nodes.push_back(ids_[gene_idx]);
+    } else if (individual[gene_idx] == 1) { // sleeping nodes
+      sleep_nodes.push_back(ids_[gene_idx]);
+      alive_nodes++;
+    } else {
+      partial_energy += energies[gene_idx];
+      alive_nodes++;
+    }
+  }
 
-  // different genes from influencer are copied with influence rate
-  for (auto const &gene: can_sleep) {
-    if (original_individual[gene] != influencer[gene]) {
-      if (distribution(generator_) < influence_rate) {
-        new_individual[gene] = influencer[gene];
+  // calculate sum(ei-avg(e)), sum(max(ei-avg(e),0)), sum(min(ei-avg(e),0))
+  float average_energy = (alive_nodes==0) ? 0.0 : total_energy/alive_nodes;
+  float energies_dev = 0.0, neg_energy_dev = 0.0, pos_energy_dev = 0.0;
+  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
+    float energy_dev = energies[gene_idx] - average_energy;
+    if (energies[gene_idx] > 0.0) { //skip dead nodes
+      if (individual[gene_idx] == 0) { //only for awake nodes
+        energies_dev += energy_dev;
+      }
+      // for all alive nodes
+      if (energy_dev < 0.0) {
+        neg_energy_dev += energy_dev;
+      } else {
+        pos_energy_dev += energy_dev;
       }
     }
   }
-  return;
+
+  auto coverage_info = regions_->GetAll(sleep_nodes, dead_nodes);
+
+  // TODO add try catch here
+  float term1;
+  if (pos_energy_dev-neg_energy_dev == 0.0) {
+    term1 = 0.0;
+  } else {
+    //term1 = FITNESS_ALPHA_*(1.0-partial_energy/total_energy);
+    //printf("%f %f %f\n", energies_dev, neg_energy_dev, pos_energy_dev);
+    term1 = (energies_dev-neg_energy_dev)/(pos_energy_dev-neg_energy_dev);
+  }
+  float term2;
+  if (coverage_info.total_coverage == 0) {
+    term2 = 0.0;
+  } else { // gamma*(1- partial_overlapping/total_overlapping)
+    term2 = coverage_info.exclusive_area/coverage_info.total_coverage;
+  }
+
+  float fitness_val = FITNESS_ALPHA_*term1 + FITNESS_BETA_*term2;
+  if (do_print == 1) {
+    printf("fitness %f, 1: %f, 2: %f\n", fitness_val, term1, term2);
+  }
+
+  fitness_ret_t  fitness_ret = {.fitness_value = fitness_val,
+                                .coverage_info = coverage_info};
+  return fitness_ret;
+}
+
+
+void
+Optimizer::PrintIndividual(individual_t individual) {
+  for (auto const &gene: individual) {
+    printf("%d", gene);
+  }
+  printf("\n");
+}
+
+// setters & getters
+vector<float>
+Optimizer::GetLearningTrace() {
+  return learning_trace_;
+}
+
+float
+Optimizer::GetBestCoverage() {
+  return best_coverage_;
+}
+
+float
+Optimizer::GetBestOverlapping() {
+  return best_overlapping_;
 }
 

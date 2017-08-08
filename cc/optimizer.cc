@@ -17,8 +17,8 @@ Optimizer::Optimizer(dict_t exclusive, regions_t overlapping,
   WMIN_           = config.second["WMIN"];
   
   nb_nodes_       = ids.size();
-  // initialize individuals structure
-  population_    = vector<individual_t>(NB_INDIVIDUALS_,
+
+  population_     = vector<individual_t>(NB_INDIVIDUALS_,
                                          individual_t(nb_nodes_, 0));
   best_locals_    = vector<individual_t>(NB_INDIVIDUALS_,
                                          individual_t(nb_nodes_, 0));

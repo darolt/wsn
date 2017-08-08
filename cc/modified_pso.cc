@@ -1,6 +1,8 @@
 #include "modified_pso.h"
 #include <stdio.h>
 
+using namespace std;
+
 ModifiedPso::ModifiedPso(dict_t exclusive, regions_t overlapping,
          vector<u_int> ids, config_t config)
     :Optimizer(exclusive, overlapping, ids, config) {
@@ -12,6 +14,7 @@ ModifiedPso::~ModifiedPso() {
 void
 ModifiedPso::Optimize(float_v energies, const vector<u_int> &can_sleep,
                       float total_energy) {
+
   uniform_real_distribution<float> distribution(0.0, 1.0);
   float mutation_rate, crossover_rate1, crossover_rate2;
   for (u_int it = 0; it < MAX_ITERATIONS_; it++) {

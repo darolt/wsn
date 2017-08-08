@@ -7,7 +7,18 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "custom_types.h"
+
+typedef struct {
+  float partial_coverage;
+  float total_coverage;
+  float partial_overlapping;
+  float total_overlapping;
+  float exclusive_area;
+} coverage_info_t;
+
+typedef unsigned int u_int;
+typedef std::pair<std::vector<u_int>,
+                  float> region_t;
 
 class Regions {
   public:

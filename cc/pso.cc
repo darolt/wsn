@@ -28,7 +28,7 @@ Pso::Optimize(float_v energies, const vector<u_int> &can_sleep,
   for (u_int it = 0; it < MAX_ITERATIONS_; it++) {
     learning_trace_.push_back(best_global_fitness_);
     for (u_int individual_idx = 0; individual_idx < NB_INDIVIDUALS_; individual_idx++) {
-      individual_t &individual = individuals_[individual_idx];
+      individual_t &individual = population_[individual_idx];
       
       //for(u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
       for(auto const &gene_idx: can_sleep) {

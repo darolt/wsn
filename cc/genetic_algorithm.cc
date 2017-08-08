@@ -34,7 +34,7 @@ GeneticAlgorithm::Optimize(float_v energies, const vector<u_int> &can_sleep,
     u_int nb_unfit = 0.6*can_sleep.size(); // selection_rate
     for (u_int sorted_idx = 0; sorted_idx < nb_unfit; sorted_idx++) {
       auto individual_idx = sorted_fitness[sorted_idx].first;
-      auto &individual = individuals_[individual_idx];
+      auto &individual = population_[individual_idx];
 
       Crossover(individual, sorted_fitness, nb_unfit, can_sleep, crossover_rate);
 
@@ -87,9 +87,9 @@ GeneticAlgorithm::Crossover(individual_t &child,
     uniform_int_distribution<int> int_distribution(nb_unfit, NB_INDIVIDUALS_);
     // father and mother may be the same individual
     auto father_idx = sorted_fitness[int_distribution(generator_)].first;
-    auto &father = individuals_[father_idx];
+    auto &father = population_[father_idx];
     auto mother_idx = sorted_fitness[int_distribution(generator_)].first;
-    auto &mother = individuals_[mother_idx];
+    auto &mother = population_[mother_idx];
 
     // half of the genes comes from father and half from mother
     for (auto const &gene: can_sleep) {
