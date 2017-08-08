@@ -1,6 +1,8 @@
 #include "optimizer.h"
 #include <stdio.h>
 
+using namespace std;
+
 Optimizer::Optimizer(dict_t exclusive, regions_t overlapping,
          vector<u_int> ids, config_t config)
     :ids_(ids) {
@@ -16,7 +18,7 @@ Optimizer::Optimizer(dict_t exclusive, regions_t overlapping,
   
   nb_nodes_       = ids.size();
   // initialize individuals structure
-  individuals_    = vector<individual_t>(NB_INDIVIDUALS_,
+  population_    = vector<individual_t>(NB_INDIVIDUALS_,
                                          individual_t(nb_nodes_, 0));
   best_locals_    = vector<individual_t>(NB_INDIVIDUALS_,
                                          individual_t(nb_nodes_, 0));
@@ -38,12 +40,12 @@ Optimizer::Run(vector<float> energies, u_int head_id) {
     total_energy += energy;
   }
 
-  float threshold = 0.005;
+  //float threshold = 0.005;
   // find all nodes that are susceptible to sleep (not dead neither ch)
   // depleted nodes and ch should cannot be taken into consideration
   vector<u_int> can_sleep;
   for(u_int idx = 0; idx < energies.size(); idx++) {
-    if (energies[idx] > threshold && ids_[idx] != head_id) {
+    if (energies[idx] == 0 && ids_[idx] != head_id) {
       can_sleep.push_back(idx);
     }
   }
@@ -57,10 +59,10 @@ Optimizer::Run(vector<float> energies, u_int head_id) {
 void
 Optimizer::Initialize(float_v energies, u_int head_id, float total_energy) {
   uniform_real_distribution<float> distribution(0.0, 1.0);
-  for (auto &individual: individuals_) {
+  for (auto &individual: population_) {
     for (u_int node_idx = 0; node_idx < nb_nodes_; node_idx++) {
       float random = distribution(generator_);
-      if (ids_[node_idx] == head_id) {
+      if ((ids_[node_idx] == head_id) || (energies[node_idx] == 0)) {
         // cluster head cannot be put to sleep
         individual[node_idx] = 0;
       } else {
@@ -74,7 +76,7 @@ Optimizer::Initialize(float_v energies, u_int head_id, float total_energy) {
 void
 Optimizer::UpdateGenerationFitness(float_v energies, float total_energy) {
   for (u_int idx = 0; idx < NB_INDIVIDUALS_; idx++) {
-    auto const &individual = individuals_[idx];
+    auto const &individual = population_[idx];
     auto fitness_ret = Fitness(individual, energies, total_energy, 0);
     float individual_fitness = fitness_ret.fitness_value;
     if (individual_fitness > best_local_fitness_[idx]) {
@@ -93,16 +95,16 @@ Optimizer::UpdateGenerationFitness(float_v energies, float total_energy) {
 }
 
 fitness_ret_t
-Optimizer::Fitness(individual_t individual, vector<float> energies,
-             float total_energy, char do_print) {
+Optimizer::Fitness(const individual_t &individual, vector<float> energies,
+                   float total_energy, char do_print) {
   vector<u_int> sleep_nodes;
   float partial_energy = 0.0;
   vector<u_int> dead_nodes;
-  float threshold = 0.005;
+  //float threshold = 0.005;
   u_int alive_nodes = 0;
   for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
     // push nodes that are dead
-    if (energies[gene_idx] < threshold) {
+    if (energies[gene_idx] == 0 ) {
       dead_nodes.push_back(ids_[gene_idx]);
     } else if (individual[gene_idx] == 1) { // sleeping nodes
       sleep_nodes.push_back(ids_[gene_idx]);
@@ -131,7 +133,7 @@ Optimizer::Fitness(individual_t individual, vector<float> energies,
     }
   }
 
-  auto coverage_info = regions_->get_all(sleep_nodes, dead_nodes);
+  auto coverage_info = regions_->GetAll(sleep_nodes, dead_nodes);
 
   // TODO add try catch here
   float term1;

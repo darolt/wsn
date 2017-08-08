@@ -1,5 +1,7 @@
 #include "regions.h"
 
+using namespace std;
+
 Regions::Regions(map<u_int, float> _exclusive, vector<region_t> _overlapping)
         : _exclusive(_exclusive),
           _overlapping(_overlapping) {
@@ -12,7 +14,7 @@ Regions::~Regions() {
 // the partial coverage (considering that ignore_nodes are inactive),
 // the total and partial overlapping areas.
 coverage_info_t
-Regions::get_all(vector<u_int> ignore_nodes, vector<u_int> dead_nodes) {
+Regions::GetAll(vector<u_int> ignore_nodes, vector<u_int> dead_nodes) {
   float total_coverage      = 0.0;
   float total_overlapping   = 0.0;
   float partial_overlapping = 0.0; 

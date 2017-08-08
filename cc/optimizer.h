@@ -12,24 +12,23 @@
 #include "regions.h"
 #include "custom_types.h"
 
-
 class Optimizer {
   public:
     Optimizer(dict_t exclusive, regions_t overlapping,
-                vector<u_int> ids, config_t config);
+                std::vector<u_int> ids, config_t config);
     virtual ~Optimizer();
 
-    // returns a vector with the best configuration found (best particle),
+    // returns a std::vector with the best configuration found (best particle),
     // indicating, for each node, if it should sleep or not;
     // the learning trace (trace of the best fitness value at each iteration);
-    // and a vector with the coverage and overlapping areas for the best
+    // and a std::vector with the coverage and overlapping areas for the best
     // configuration
     individual_t Run(float_v energies, u_int head_id);
 
     // setters & getters
     void SetAlpha(float value);
     void SetBeta(float value);
-    vector<float> GetLearningTrace();
+    std::vector<float> GetLearningTrace();
     float GetBestCoverage();
     float GetBestOverlapping();
 
@@ -41,23 +40,23 @@ class Optimizer {
 
     // Returns a float indicating how fit a individual/particle is,
     // and the coverage and overlapping areas for that particle.
-    fitness_ret_t Fitness(individual_t individual, vector<float> energies,
+    fitness_ret_t Fitness(const individual_t &individual, std::vector<float> energies,
                           float total_energy, char do_print);
 
   protected:
-    vector<u_int> ids_;
+    std::vector<u_int> ids_;
     u_int nb_nodes_;
 
-    // vector with all individuals
-    vector<individual_t> individuals_;
+    // std::vector with all individuals
+    std::vector<individual_t> population_;
     // each index contains the best individuals found in that index
     // (it supposes that the number of individuals is constant)
-    vector<individual_t> best_locals_;
+    std::vector<individual_t> best_locals_;
     // best individual found
     individual_t best_global_;
-    // vector with the fitness of the best individual found
+    // std::vector with the fitness of the best individual found
     // (used for optimization)
-    vector<float> best_local_fitness_;
+    std::vector<float> best_local_fitness_;
     // fitness of the best individual in the history
     float best_global_fitness_;
 
@@ -66,10 +65,10 @@ class Optimizer {
     float best_coverage_;
     float best_overlapping_;
     // learning trace for the last run
-    vector<float> learning_trace_;
+    std::vector<float> learning_trace_;
 
     // random related
-    default_random_engine generator_;
+    std::default_random_engine generator_;
 
     // from config.py
     u_int NB_INDIVIDUALS_;
@@ -81,7 +80,7 @@ class Optimizer {
 
     virtual void Initialize(float_v energies, u_int head_id,
                             float total_energy);
-    virtual void Optimize(float_v energies, const vector<u_int> &can_sleep,
+    virtual void Optimize(float_v energies, const std::vector<u_int> &can_sleep,
                           float total_energy) = 0;
 
     void UpdateGenerationFitness(float_v energies, float total_energy);

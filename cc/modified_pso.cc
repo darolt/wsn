@@ -17,7 +17,7 @@ ModifiedPso::Optimize(float_v energies, const vector<u_int> &can_sleep,
   for (u_int it = 0; it < MAX_ITERATIONS_; it++) {
     learning_trace_.push_back(best_global_fitness_);
     for (u_int particle_idx = 0; particle_idx < NB_INDIVIDUALS_; particle_idx++) {
-      individual_t &particle = individuals_[particle_idx];
+      individual_t &particle = population_[particle_idx];
       mutation_rate   = WMAX_ - (WMAX_-WMIN_)*it/float(MAX_ITERATIONS_);
       crossover_rate1 = 1.0 - it/float(MAX_ITERATIONS_);
       crossover_rate2 = 1.0 - crossover_rate1;
