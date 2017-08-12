@@ -26,14 +26,20 @@ typedef std::pair<std::map<std::string, u_int>,
                   std::map<std::string, float>> config_t;
 
 typedef struct {
-  float fitness_value;
+  float total;
+  float term1;
+  float term2;
   coverage_info_t coverage_info;
 } fitness_ret_t;
+typedef std::vector<fitness_ret_t> population_fitness_t;
 
 class Optimizer {
+
+  friend class Individual;
+
   public:
     Optimizer(dict_t exclusive, regions_t overlapping,
-                std::vector<u_int> ids, config_t config);
+              std::vector<u_int> ids, config_t config);
     virtual ~Optimizer();
 
     // returns a std::vector with the best configuration found (best particle),
@@ -53,17 +59,21 @@ class Optimizer {
   private:
     Regions *regions_;
 
-    float FITNESS_ALPHA_;
-    float FITNESS_BETA_;
+    float fitness_alpha_;
+    float fitness_beta_;
 
     // Returns a float indicating how fit a individual/particle is,
     // and the coverage and overlapping areas for that particle.
-    fitness_ret_t Fitness(const individual_t &individual, std::vector<float> energies,
-                          float total_energy, char do_print);
+    fitness_ret_t Fitness(const individual_t &individual, char do_print);
 
   protected:
+    // attributes
     std::vector<u_int> ids_;
     u_int nb_nodes_;
+    u_int nb_individuals_;
+    u_int max_iterations_;
+    float wmax_;
+    float wmin_;
 
     // std::vector with all individuals
     std::vector<individual_t> population_;
@@ -77,7 +87,6 @@ class Optimizer {
     std::vector<float> best_local_fitness_;
     // fitness of the best individual in the history
     float best_global_fitness_;
-
     // coverage and overlapping for the best configuration found in the
     // last run. These are not necessarily the best coverages found.
     float best_coverage_;
@@ -88,19 +97,19 @@ class Optimizer {
     // random related
     std::default_random_engine generator_;
 
-    // from config.py
-    u_int NB_INDIVIDUALS_;
-    u_int MAX_ITERATIONS_;
-    float WMAX_;
-    float WMIN_;
+    // session attributes (stored here for convenience)
+    float_v energies_;
+    float total_energy_;
+    u_int head_id_;
 
+    // methods
     void PrintIndividual(individual_t individual);
 
-    virtual void Initialize(float_v energies, u_int head_id,
-                            float total_energy);
-    virtual void Optimize(float_v energies, const std::vector<u_int> &can_sleep,
-                          float total_energy) = 0;
+    virtual void CreatePopulation();
+    virtual void Optimize(const std::vector<u_int> &can_sleep);
 
-    void UpdateGenerationFitness(float_v energies, float total_energy);
+    population_fitness_t CalculateFitness(std::vector<individual_t> &group);
+
+    void UpdateFitness();
 };
 #endif //OPTIMIZER_H
