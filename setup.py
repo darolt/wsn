@@ -31,11 +31,20 @@ genetic_algorithm = Extension('cc._genetic_algorithm',
                               extra_objects=[build_path+'regions.o',
                                              build_path+'optimizer.o'],
                               swig_opts=swig_opts)
+
+ecca               = Extension('cc._ecca',
+                              sources=[source_path+'ecca.cc',
+                                       source_path+'individual.cc',
+                                       source_path+'ecca.i'],
+                              extra_objects=[build_path+'regions.o',
+                                             build_path+'optimizer.o'],
+                              swig_opts=swig_opts)
+
 # compile C++ libraries
 setup (name        = 'Optimizers',
        version     = '1.0',
        author      = "Jean Da Rolt",
        description = """C++ wrappers for performance optimization.""",
-       ext_modules = [modified_pso, pso, genetic_algorithm],
-       py_modules  = ["modified_pso", "pso", "genetic_algorithm"],
+       ext_modules = [modified_pso, pso, genetic_algorithm, ecca],
+       py_modules  = ["modified_pso", "pso", "genetic_algorithm", "ecca"],
        )

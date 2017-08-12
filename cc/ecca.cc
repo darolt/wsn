@@ -1,197 +1,231 @@
-#include "pso.h"
+#include "ecca.h"
+#include "individual.h"
 #include <stdio.h>
+#include <limits>
+#include <algorithm>
 
 Ecca::Ecca(dict_t exclusive, regions_t overlapping,
-         vector<u_int> ids, config_t config) {
-
-  regions_ = new Regions(exclusive, overlapping);
-
-  NB_INDIVIDUALS_ = config.first["NB_INDIVIDUALS"];
-  MAX_ITERATIONS_ = config.first["MAX_ITERATIONS"];
-  FITNESS_ALPHA_  = config.second["FITNESS_ALPHA"];
-  FITNESS_BETA_   = config.second["FITNESS_BETA"];
-  WMAX_           = config.second["WMAX"];
-  WMIN_           = config.second["WMIN"];
-  
-  nb_nodes_       = ids.size();
-
-  population_    = vector<individual_t>(NB_INDIVIDUALS_,
-                                         individual_t(nb_nodes_, 0));
-  best_locals_    = vector<individual_t>(NB_INDIVIDUALS_,
-                                         individual_t(nb_nodes_, 0));
-  best_global_    = individual_t(nb_nodes_, 0);
-  best_local_fitness_ = vector<float>(NB_INDIVIDUALS_, 0.0);
-
+           std::vector<unsigned int> ids, config_t config)
+    :Optimizer(exclusive, overlapping, ids, config) {
 }
 
 Ecca::~Ecca() {
-  delete regions_;
 }
 
-void
-Ecca::InitializePopulation() {
-  UpdateFitness()
-}
-
-void
-Ecca::UpdateFitness() {
-  Atualiza fitness para cada individuo
-}
-
-void
-Ecca::Search() {
-  Initialize();
-  UpdateFitness()
-  for iteration {
-    NonDominatedSorting();
-    ControlledElitism();
-    UpdateFitness();
-    Reproduction();
-  }
-}
-
-void
-Ecca::Reproduction(selected, crossover_rate) {
-  children = []
-  ate gerar children do tamanho da populacao {
-    pega parents dos selected
-    child = Crossover(parent0, parent1, crossover_rate);
-    Mutate(child, mutation_rate);
-    append child to children
-}
-
+// public methods
 
 individual_t
-Optimizer::Run(vector<float> energies, u_int head_id) {
+Ecca::Run(std::vector<float> energies, unsigned int head_id) {
+  learning_trace_.clear();
+
+  // find all nodes that are susceptible to sleep (not dead neither ch)
+  // depleted nodes and ch should cannot be taken into consideration
+  std::vector<unsigned int> can_sleep;
+  for(unsigned int idx = 0; idx < energies.size(); idx++)
+    if (energies[idx] != 0 && ids_[idx] != head_id)
+      can_sleep.push_back(idx);
+
+  // reset best global and best locals
+  Individual::SetNewRun();
+
+  auto population = CreatePopulation1();
+  //auto population_fitness = CalculateFitness(energies, total_energy, population);
+  auto fronts = FastNonDominatedSort(population);
+  float crossover_rate = 0.5;
+  auto children = Reproduce(population, crossover_rate);
+  //auto children_fitness = CalculateFitness(energies, total_energy, children);
+
+  for (unsigned int it = 0; it < max_iterations_; it++) {
+    population.insert(population.end(), children.begin(), children.end());
+    for (unsigned int idx = 0; idx<population.size(); idx++)
+      population[idx].idx_ = idx;
+    //auto new_population_fitness = population_fitness + children_fitness;
+    fronts = FastNonDominatedSort(population);
+    auto parents = FindBestParents(fronts);
+    std::random_shuffle(parents.begin(), parents.end());
+    // TODO randomly select some parents
+    population = children;
+    children = Reproduce(parents, crossover_rate);
+    //updateFitness(children);    
+  } 
+
+  population.insert(population.end(), children.begin(), children.end());
+  for (unsigned int idx = 0; idx<population.size(); idx++)
+    population[idx].idx_ = idx;
+  fronts = FastNonDominatedSort(population);
+  auto parents = FindBestParents(fronts);
+
+  return Individual::GetBestGenes();
+}
+
+
+// private methods
+
+std::vector<Individual>
+Ecca::CreatePopulation1() {
+  std::vector<Individual> population;
+  for (unsigned int idx = 0; idx < nb_individuals_; idx++) {
+    population.push_back(Individual(idx, this));
+  }
+  return population;
+}
+
+std::vector<std::vector<Individual>>
+Ecca::FastNonDominatedSort(std::vector<Individual> &population) {
+  // each index in fronts represent a single rank, that contain all
+  // individuals that have that rank
+  std::vector<std::vector<Individual>> fronts;
+
+  std::vector<unsigned int> dom_count =  
+    std::vector<unsigned int>(population.size(), 0);
+  std::vector<std::vector<unsigned int>> dom_set = 
+    std::vector<std::vector<unsigned int>>(population.size(),
+                                           std::vector<unsigned int>());
+
+  // find front0 and calculate rank 0 (store it in every individual)
+  std::vector<Individual> front0;
+  for (unsigned int idx1 = 0; idx1<population.size(); idx1++) {
+    auto &individual1 = population[idx1];
+    for (unsigned int idx2 = 0; idx2<population.size(); idx2++) {
+      auto &individual2 = population[idx2];
+      if (Dominates(individual1, individual2))
+        dom_set[idx1].push_back(idx2);
+      else if (Dominates(individual2, individual1))
+        dom_count[idx1]++;
+    }
+    if (dom_count[idx1] == 0) {
+      population[idx1].rank_ = 0;
+      front0.push_back(population[idx1]);
+    }
+  }
+  fronts.push_back(front0);
+
+  // calculate higher-ranked fronts
+  unsigned int curr = 0;
+  do {
+    std::vector<Individual> next_front;
+    for (auto &individual1: fronts[curr]) {
+      for (auto &idx2: dom_set[individual1.idx_]) {
+        auto individual2 = population[idx2];
+        dom_count[individual2.idx_]--;
+        if (dom_count[individual2.idx_] == 0) {
+          individual2.rank_ = curr+1;
+          next_front.push_back(individual2);
+        }
+      }
+    }
+    curr++;
+    if (next_front.size() != 0) {
+      fronts.push_back(next_front);
+    }
+  } while (curr < fronts.size());
+  return fronts;
+}
+
+bool
+Ecca::Dominates(Individual &individual1, Individual &individual2) {
+  if ((individual1.GetFitness().term1 > individual2.GetFitness().term1) &&
+      (individual1.GetFitness().term2 > individual2.GetFitness().term2))
+    return true;
+  else
+    return false;
+}
+
+std::vector<Individual>
+Ecca::Reproduce(std::vector<Individual> &population, float crossover_rate) {
+  std::vector<Individual> children;
+  
+  for (unsigned int idx1=0; idx1<population.size(); idx1++) {
+    auto individual1 = population[idx1];
+    unsigned int idx2 = (idx1%2==0) ? idx1+1 : idx1-1;
+    auto individual2 = (idx2 == population.size()) ? population[0] : population[idx2];
+
+    Individual child = Individual(idx1, individual1, individual2, crossover_rate, this);
+    children.push_back(child);
+    if (children.size() >= population.size()) 
+      break;
+  }
+  return children;
+}
+
+std::vector<Individual>
+Ecca::FindBestParents(std::vector<std::vector<Individual>> &fronts) {
+  std::vector<Individual> offspring;
+  unsigned int last_front = 0;
+
+  for (auto &front: fronts) {
+    CalculateCrowdingDistance(front);
+    if (offspring.size()+front.size() > nb_individuals_)
+      break;
+    for (auto &individual: front)
+      offspring.push_back(individual);
+    last_front++;
+  }
+
+  unsigned int remaining = nb_individuals_-offspring.size();
+  if (remaining > 0) {
+    // sort according to crowd_dist_ (ascending)
+    std::sort(fronts[last_front].begin(), fronts[last_front].end(),
+              [](const Individual &lhs, const Individual &rhs) {
+                return lhs.crowd_dist_ < rhs.crowd_dist_;
+              });
+
+    offspring.insert(offspring.end(), fronts[last_front].begin(),
+                                      fronts[last_front].begin()+remaining);
+  }
+
+  return offspring;
 }
 
 void
-Optimizer::InitializePopulation(float_v energies, u_int head_id, float total_energy) {
-  uniform_real_distribution<float> distribution(0.0, 1.0);
-  for (auto &individual: population_) {
-    for (u_int node_idx = 0; node_idx < nb_nodes_; node_idx++) {
-      float random = distribution(generator_);
-      if ((ids_[node_idx] == head_id) || (energies[node_idx] == 0)) {
-        // cluster head cannot be put to sleep
-        individual[node_idx] = 0;
-      } else {
-        individual[node_idx] = (random < 0.5) ? 1 : 0;
-      }
-    } 
+Ecca::CalculateCrowdingDistance(std::vector<Individual> &group) {
+  float max1 = 0.0, min1 = std::numeric_limits<float>::max();
+  float max2 = 0.0, min2 = std::numeric_limits<float>::max();
+  for (auto &individual: group) {
+    individual.crowd_dist_ = 0.0;
+    // find max and min fitness values in group (for each objective)
+    if (individual.fitness_.term1 > max1)
+      max1 = individual.fitness_.term1;
+    if (individual.fitness_.term2 > max2)
+      max2 = individual.fitness_.term2;
+    if (individual.fitness_.term1 < min1)
+      min1 = individual.fitness_.term1;
+    if (individual.fitness_.term1 < min1)
+      min1 = individual.fitness_.term1;
   }
-  UpdateGenerationFitness(energies, total_energy);
-}
+  // calculates the ranges
+  float rge1 = max1 - min1;
+  float rge2 = max2 - min2;
 
-void
-Optimizer::UpdateGenerationFitness(float_v energies, float total_energy) {
-  for (u_int idx = 0; idx < NB_INDIVIDUALS_; idx++) {
-    auto const &individual = population_[idx];
-    auto fitness_ret = Fitness(individual, energies, total_energy, 0);
-    float individual_fitness = fitness_ret.fitness_value;
-    if (individual_fitness > best_local_fitness_[idx]) {
-      best_locals_[idx] = individual;
-      best_local_fitness_[idx] = individual_fitness;
-    }
-    if (individual_fitness > best_global_fitness_) {
-      best_global_ = individual;
-      best_global_fitness_ = individual_fitness;
-      best_coverage_ = fitness_ret.coverage_info.partial_coverage/
-                       fitness_ret.coverage_info.total_coverage;
-      best_overlapping_ = fitness_ret.coverage_info.partial_overlapping/
-                          fitness_ret.coverage_info.total_overlapping;
-    }
+  // first and last value are set to infinity
+  group.front().crowd_dist_ = std::numeric_limits<float>::max();
+  group.back().crowd_dist_  = std::numeric_limits<float>::max();
+
+  if (rge1 != 0.0) {
+    for (unsigned int idx=1; idx<group.size()-1; idx++) {
+      group[idx].crowd_dist_ += (group[idx+1].fitness_.term1 - group[idx-1].fitness_.term1)/rge1;
+    }  
   }
-}
-
-fitness_ret_t
-Optimizer::Fitness(const individual_t &individual, vector<float> energies,
-                   float total_energy, char do_print) {
-  vector<u_int> sleep_nodes;
-  float partial_energy = 0.0;
-  vector<u_int> dead_nodes;
-  //float threshold = 0.005;
-  u_int alive_nodes = 0;
-  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-    // push nodes that are dead
-    if (energies[gene_idx] == 0 ) {
-      dead_nodes.push_back(ids_[gene_idx]);
-    } else if (individual[gene_idx] == 1) { // sleeping nodes
-      sleep_nodes.push_back(ids_[gene_idx]);
-      alive_nodes++;
-    } else {
-      partial_energy += energies[gene_idx];
-      alive_nodes++;
-    }
+  if (rge2 != 0.0) {
+    for (unsigned int idx=1; idx<group.size()-1; idx++) {
+      group[idx].crowd_dist_ += (group[idx+1].fitness_.term2 - group[idx-1].fitness_.term2)/rge2;
+    }  
   }
-
-  // calculate sum(ei-avg(e)), sum(max(ei-avg(e),0)), sum(min(ei-avg(e),0))
-  float average_energy = (alive_nodes==0) ? 0.0 : total_energy/alive_nodes;
-  float energies_dev = 0.0, neg_energy_dev = 0.0, pos_energy_dev = 0.0;
-  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-    float energy_dev = energies[gene_idx] - average_energy;
-    if (energies[gene_idx] > 0.0) { //skip dead nodes
-      if (individual[gene_idx] == 0) { //only for awake nodes
-        energies_dev += energy_dev;
-      }
-      // for all alive nodes
-      if (energy_dev < 0.0) {
-        neg_energy_dev += energy_dev;
-      } else {
-        pos_energy_dev += energy_dev;
-      }
-    }
-  }
-
-  auto coverage_info = regions_->GetAll(sleep_nodes, dead_nodes);
-
-  // TODO add try catch here
-  float term1;
-  if (pos_energy_dev-neg_energy_dev == 0.0) {
-    term1 = 0.0;
-  } else {
-    //term1 = FITNESS_ALPHA_*(1.0-partial_energy/total_energy);
-    //printf("%f %f %f\n", energies_dev, neg_energy_dev, pos_energy_dev);
-    term1 = (energies_dev-neg_energy_dev)/(pos_energy_dev-neg_energy_dev);
-  }
-  float term2;
-  if (coverage_info.total_coverage == 0) {
-    term2 = 0.0;
-  } else { // gamma*(1- partial_overlapping/total_overlapping)
-    term2 = coverage_info.exclusive_area/coverage_info.total_coverage;
-  }
-
-  float fitness_val = FITNESS_ALPHA_*term1 + FITNESS_BETA_*term2;
-  if (do_print == 1) {
-    printf("fitness %f, 1: %f, 2: %f\n", fitness_val, term1, term2);
-  }
-
-  fitness_ret_t  fitness_ret = {.fitness_value = fitness_val,
-                                .coverage_info = coverage_info};
-  return fitness_ret;
 }
 
 
 void
-Optimizer::PrintIndividual(individual_t individual) {
-  for (auto const &gene: individual) {
-    printf("%d", gene);
+Ecca::CrowdedSorting(std::vector<Individual> &group) {
+  for (unsigned int idx=0; idx< group.size()-1; idx++) {
+    for (unsigned int idx=0; idx< group.size()-1; idx++) {
+      if (group[idx].crowd_dist_ < group[idx+1].crowd_dist_) {
+        // swap
+        //Individual swap(group[idx]);
+        //group[idx] = group[idx+1];
+        //group[idx] = swap;
+        std::swap(group[idx], group[idx+1]);
+      }
+    }
   }
-  printf("\n");
-}
-
-// setters & getters
-vector<float>
-Optimizer::GetLearningTrace() {
-  return learning_trace_;
-}
-
-float
-Optimizer::GetBestCoverage() {
-  return best_coverage_;
-}
-
-float
-Optimizer::GetBestOverlapping() {
-  return best_overlapping_;
 }
 

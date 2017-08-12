@@ -22,10 +22,12 @@ typedef std::pair<std::vector<u_int>,
 
 class Regions {
   public:
-    Regions(std::map<u_int, float> _exclusive, std::vector<region_t> _overlapping);
+    Regions(std::map<u_int, float> _exclusive,
+            std::vector<region_t> _overlapping);
     ~Regions();
 
-    coverage_info_t GetAll(std::vector<u_int> ignore_nodes, std::vector<u_int> dead_nodes);
+    coverage_info_t GetCoverage(const std::vector<u_int> &ignore_nodes,
+                                const std::vector<u_int> &dead_nodes);
 
   private:
     std::map<u_int, float> _exclusive;

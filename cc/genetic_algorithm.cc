@@ -11,21 +11,20 @@ GeneticAlgorithm::~GeneticAlgorithm() {
 }
 
 void
-GeneticAlgorithm::Optimize(float_v energies, const vector<u_int> &can_sleep,
-              float total_energy) {
+GeneticAlgorithm::Optimize(const vector<u_int> &can_sleep) {
   // create sorted_fitness and keep it sorted
   // used for sorting least fit individuals faster
   // this implements GA selection implicitly
   vector<pair<u_int, float>> sorted_fitness;
-  for (u_int idx = 0; idx < NB_INDIVIDUALS_; idx++) {
+  for (u_int idx = 0; idx < nb_individuals_; idx++) {
     sorted_fitness.push_back(make_pair(idx, best_local_fitness_[idx]));
   }
   SortFitness(sorted_fitness);
 
   float mutation_rate, crossover_rate;
-  for (u_int it = 0; it < MAX_ITERATIONS_; it++) {
-    mutation_rate   = WMAX_ - (WMAX_-WMIN_)*it/float(MAX_ITERATIONS_);
-    crossover_rate = 1.0 - it/float(MAX_ITERATIONS_);
+  for (u_int it = 0; it < max_iterations_; it++) {
+    mutation_rate   = wmax_ - (wmax_-wmin_)*it/float(max_iterations_);
+    crossover_rate = 1.0 - it/float(max_iterations_);
 
     learning_trace_.push_back(best_global_fitness_);
 
@@ -41,7 +40,7 @@ GeneticAlgorithm::Optimize(float_v energies, const vector<u_int> &can_sleep,
       Mutate(individual, can_sleep, mutation_rate);
     }
 
-    UpdateGenerationFitness(energies, total_energy);
+    UpdateFitness();
     SortFitness(sorted_fitness);
   }
 }
@@ -84,7 +83,7 @@ GeneticAlgorithm::Crossover(individual_t &child,
   uniform_real_distribution<float> distribution(0.0, 1.0);
   if (distribution(generator_) < crossover_rate) {
     // choose father and mother from best fit individuals
-    uniform_int_distribution<int> int_distribution(nb_unfit, NB_INDIVIDUALS_);
+    uniform_int_distribution<int> int_distribution(nb_unfit, nb_individuals_);
     // father and mother may be the same individual
     auto father_idx = sorted_fitness[int_distribution(generator_)].first;
     auto &father = population_[father_idx];

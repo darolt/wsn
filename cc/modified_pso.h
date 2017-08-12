@@ -27,7 +27,6 @@ class ModifiedPso: public Optimizer {
     // from individual1 and half from individual2
     void Crossover(individual_t &individual1, individual_t &individual2);
 
-    void Optimize(float_v energies, const std::vector<u_int> &can_sleep,
-                  float total_energy);
+    void Optimize(const std::vector<u_int> &can_sleep);
 };
 #endif //MODIFIED_PSO_H

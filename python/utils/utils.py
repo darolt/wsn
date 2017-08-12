@@ -57,8 +57,8 @@ def print_coverage_info(traces):
       values  = np.array(trace[2])
       mean    = np.nanmean(values)
       stdev   = np.nanstd(values)
-      print("%s: %s avg: %f" %(scenario_name, trace_name, mean))
-      print("%s: %s stdev: %f" %(scenario_name, trace_name, stdev))
+      args = (scenario_name, trace_name, mean, stdev)
+      print("%s: %s avg (std): %f (%f)" % args)
 
 def plot_traces(traces):
   first_tracer = traces.itervalues().next()

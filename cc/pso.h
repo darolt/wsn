@@ -10,19 +10,16 @@
 #include <random>
 #include "optimizer.h"
 
-using namespace std;
-
 class Pso: public Optimizer {
   public:
     Pso(dict_t exclusive, regions_t overlapping,
-        vector<u_int> ids, config_t config);
+        std::vector<u_int> ids, config_t config);
     ~Pso();
 
   private:
     // attributes
-    vector<float_v> velocity_;
+    std::vector<float_v> velocity_;
   
-    void Optimize(float_v energies, const vector<u_int> &can_sleep,
-                  float total_energy);
+    void Optimize(const std::vector<u_int> &can_sleep);
 };
 #endif //PSO_H

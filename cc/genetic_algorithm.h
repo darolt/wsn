@@ -32,8 +32,7 @@ class GeneticAlgorithm: public Optimizer {
                    const vector<u_int> &can_sleep,
                    float crossover_rate);
 
-    void Optimize(float_v energies, const vector<u_int> &can_sleep,
-                  float total_energy);
+    void Optimize(const vector<u_int> &can_sleep);
 
     void SortFitness(vector<pair<u_int, float>> &sorted_fitness);
 };
