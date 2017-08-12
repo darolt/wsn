@@ -1,5 +1,5 @@
 # WSN simulator
-A Wireless Sensor Networks simulator in Python and C++ (via SWIG).
+A Wireless Sensor Network simulator in Python and C++ (via SWIG).
 
 It basically simulates the communication among nodes and communication with the base station. It has a energy model that helps estimates the network lifetime. It has some pre-defined scenarios (including clustering techniques):
 - Direct Communication (from nodes directly to the base station);
