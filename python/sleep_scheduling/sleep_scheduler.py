@@ -47,7 +47,8 @@ class SleepScheduler(object):
     rent cluster head should not be put to sleep, otherwise all informa-
     tion for that node is lost.
     """
-    if (self._cluster.count_alive_nodes() == 0):
+    # when a single node (CH) is alive you must keep it awake
+    if (self._cluster.count_alive_nodes() <= 1):
       return {}
     membership = self._cluster[0].membership
     logging.debug("running sleep scheduling for cluster %d" % (membership))
@@ -64,6 +65,7 @@ class SleepScheduler(object):
     learning_trace     = self._pso.GetLearningTrace()
     best_coverage      = self._pso.GetBestCoverage()
     best_overlapping   = self._pso.GetBestOverlapping()
+    print(best_overlapping)
 
     #logging.info('search finished.')
     #print(self._best_configuration)

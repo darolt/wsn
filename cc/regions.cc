@@ -41,20 +41,19 @@ Regions::GetCoverage(const vector<u_int> &ignore_nodes,
   for (auto const &region: _overlapping) {
     // subtract sets: owners - ignore and check if region would still
     // exist or overlap
-    unsigned int awake_remains = region.first.size();
+    unsigned int active_remains = region.first.size();
     unsigned int alive_remains = region.first.size();
     for (auto const &owner: region.first) {
       for (auto const &ignore_node: ignore_nodes) {
-        if (owner == ignore_node) {
-          awake_remains--;
-        }
+        if (owner == ignore_node)
+          active_remains--;
       }
     // subtract sets: owners - dead and check if region would still
     // exist or overlap
       for (auto const &dead_node: dead_nodes) {
         if (owner == dead_node) {
           alive_remains--;
-          awake_remains--;
+          active_remains--;
         }
       }
     }
@@ -65,10 +64,10 @@ Regions::GetCoverage(const vector<u_int> &ignore_nodes,
       total_overlapping += region.second;
     }
 
-    if (awake_remains == 1) {
+    if (active_remains == 1) {
       partial_coverage    += region.second;
       exclusive_area      += region.second;
-    } else if (awake_remains > 1) {
+    } else if (active_remains > 1) {
       partial_coverage    += region.second;
       partial_overlapping += region.second;
     }

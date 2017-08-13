@@ -15,8 +15,10 @@ class Tracer(dict):
     # boolean that indicates if it is plotable and if is printable
     self['alive_nodes']     = (alive_nodes_label,      rounds_label, [], 1, 0)
     self['energies']        = (energies_label,         rounds_label, [], 1, 0)
+
     self['coverage']        = (coverage_label,         rounds_label, [], 0, 1)
     self['overlapping']     = (overlapping_label,      rounds_label, [], 0, 1)
     self['nb_sleeping']     = (nb_sleeping_label,      rounds_label, [], 0, 1)
     self['initial_fitness'] = (initial_learning_label, rounds_label, [], 0, 1)
     self['final_fitness']   = (final_learning_label,   rounds_label, [], 0, 1)
+

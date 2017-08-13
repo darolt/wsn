@@ -5,6 +5,7 @@ from python.utils.utils import *
 from python.network.node import *
 from python.network.network import Network
 from python.routing.routing_protocol import *
+import config as cf
 
 class MTE(RoutingProtocol):
   def _find_shortest_path(self, network):
@@ -33,7 +34,7 @@ class MTE(RoutingProtocol):
         if other == node:
           continue
         distance = calculate_distance(node, other)
-        cost = distance**2 if distance < THRESHOLD_DIST else distance**4
+        cost = distance**2 if distance < cf.THRESHOLD_DIST else distance**4
         G[node.id][other.id] = cost
   
     # calculate shortest path and set next_hop accordingly

@@ -56,6 +56,7 @@ class Network(list):
     self.deaths_this_round = 0
     with_sleep_scheduling = hasattr(self, 'sleep_scheduler_class')
     for round_nb in range(0, cf.MAX_ROUNDS):
+      self.round = round_nb
       print_args = (round_nb, self.get_remaining_energy())
       print("round %d: total remaining energy: %f" % print_args)
       if not self.someone_alive():
@@ -91,7 +92,6 @@ class Network(list):
     information is forwarded through the intermediary nodes to the base
     station.
     """
-    self.round = round
     for i in range(0, cf.MAX_TX_PER_ROUND):
       self._sensing_phase()
       self._communication_phase()

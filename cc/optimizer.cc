@@ -98,10 +98,20 @@ Optimizer::UpdateFitness() {
     if (individual_fitness > best_global_fitness_) {
       best_global_ = individual;
       best_global_fitness_ = individual_fitness;
-      best_coverage_ = fitness_ret.coverage_info.partial_coverage/
-                       fitness_ret.coverage_info.total_coverage;
-      best_overlapping_ = fitness_ret.coverage_info.partial_overlapping/
-                          fitness_ret.coverage_info.total_overlapping;
+      auto coverage_info = fitness_ret.coverage_info;
+      if (coverage_info.partial_coverage == 0.0 &&
+          coverage_info.total_coverage   == 0.0)
+        best_coverage_ = 0.0;
+      else
+        best_coverage_    = coverage_info.partial_coverage/
+                            coverage_info.total_coverage;
+      
+      if (coverage_info.partial_overlapping == 0.0 &&
+          coverage_info.total_overlapping   == 0.0)
+        best_overlapping_ = 0.0;
+      else
+        best_overlapping_ = coverage_info.partial_overlapping/
+                            coverage_info.total_overlapping;
     }
   }
 }

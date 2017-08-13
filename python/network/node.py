@@ -14,10 +14,15 @@ class Node(object):
       self.energy_source = Battery(self)
 
     self.id = id
-    self._next_hop = cf.BSID
+    self.network_handler = parent
+
+    self.reactivate()
+
+  def reactivate(self):
+    """Reactivate nodes for next simulation."""
     self.alive = 1
     self.tx_queue_size = 0
-    self.network_handler = parent
+    self._next_hop = cf.BSID
     self.distance_to_endpoint = 0
     self.amount_sensed = 0
     self.amount_transmitted = 0
@@ -26,12 +31,12 @@ class Node(object):
     # aggregation function determines the cost of forwarding messages
     # (in number of bits)
     self.aggregation_function = lambda x: 0
-    # PSO-related attributes
-    self.nb_neighbors = -1
-    self.neighbors = []
+    self.time_of_death = cf.INFINITY
     self._is_sleeping = 0
     self.sleep_prob = 0.0
-    self.time_of_death = cf.INFINITY
+    # for coverage purposes
+    self.neighbors = []
+    self.nb_neighbors = -1
 
   @property
   def next_hop(self):
@@ -94,11 +99,6 @@ class Node(object):
     else:
       term2 = PSO_F*(self.distance_to_endpoint-1)/self.distance_to_endpoint
     self.sleep_prob = term1 + term2
-
-  def reactivate(self):
-    """Reactivate nodes for next simulation."""
-    self.alive = 1
-    self.tx_queue_size = 0
 
   def is_head(self):
     if self.next_hop == cf.BSID and self.id != cf.BSID and self.alive:

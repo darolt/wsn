@@ -106,8 +106,8 @@ NB_INDIVIDUALS   = 20
 MAX_ITERATIONS = 100
 # ALPHA and BETA are the fitness function' weights
 # where ALPHA optimizes energy lifetime, BETA the coverage
-FITNESS_ALPHA  = 0.5
-FITNESS_BETA   = 0.5
+FITNESS_ALPHA  = 1.0
+FITNESS_BETA   = 0.0
 WMAX = 0.6
 WMIN = 0.1
 
