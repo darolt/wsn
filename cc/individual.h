@@ -28,6 +28,7 @@ class Individual {
     std::vector<char> GetGenes();
     static void SetNewRun();
     static std::vector<char> GetBestGenes();
+    static fitness_t GetBestFitness();
 
     // used by NSGA-II to:
     // indicate front membership
@@ -39,25 +40,20 @@ class Individual {
 
   private:
     std::vector<char> genes_;
+    // best fitness in individual's history
     fitness_t best_fitness_;
 
     unsigned int days_alive_;
     static unsigned int fresh_run_;
 
+    // best fitness and genes in population's history
     static fitness_t best_global_;
     static std::vector<char> best_genes_;
 
     // Individuals must be
     static Optimizer *optimizer_;
 
-    //static unsigned int nb_genes_;
-    //static std::vector<float> energies_;
-    //static unsigned int head_id_;
-    //static float total_energy_;
-    //static std::vector<u_int> ids_;
-    //static float fitness_alpha_;
-    //static float fitness_beta_;
-    std::default_random_engine generator_;
+    static std::default_random_engine generator_;
 
     fitness_t Fitness();
     void SampleNewGenes();

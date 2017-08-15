@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import math
 import logging, sys
 import inspect
 
@@ -37,9 +36,9 @@ if __name__ == '__main__':
 
     if scenario_name in scenario_names:
       scenario_names[scenario_name] += 1
-      scenario_name += str(scenario_names[scenario_name])
     else:
       scenario_names[scenario_name] = 1
+    scenario_name += " (" + str(scenario_names[scenario_name]) + ")"
 
     routing_protocol_class          = eval(routing_topology)
     network.routing_protocol        = routing_protocol_class()

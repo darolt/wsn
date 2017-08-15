@@ -33,6 +33,7 @@ scenario_2 = ('MTE',   None,         'total')
 scenario_3 = ('FCM',   None,         'zero')
 scenario_4 = ('FCM',  'ModifiedPso', 'zero')
 scenario_5 = ('FCM',  'Pso',         'zero')
+scenario_6 = ('FCM',  'Ecca',        'zero')
 # list with all scenarios to simulate
 scenarios = [
               #scenario_0,
@@ -43,14 +44,17 @@ scenarios = [
               "cf.FITNESS_BETA=0.5",
               scenario_4,
               scenario_5,
+              scenario_6,
               "cf.FITNESS_ALPHA=1.0",
               "cf.FITNESS_BETA=0.0",
               scenario_4,
               scenario_5,
+              scenario_6,
               "cf.FITNESS_ALPHA=0.0",
               "cf.FITNESS_BETA=1.0",
               scenario_4,
-              scenario_5
+              scenario_5,
+              scenario_6,
             ]
 
 ## tracer options
@@ -106,8 +110,8 @@ NB_INDIVIDUALS   = 20
 MAX_ITERATIONS = 100
 # ALPHA and BETA are the fitness function' weights
 # where ALPHA optimizes energy lifetime, BETA the coverage
-FITNESS_ALPHA  = 1.0
-FITNESS_BETA   = 0.0
+FITNESS_ALPHA  = 0.5
+FITNESS_BETA   = 0.5
 WMAX = 0.6
 WMIN = 0.1
 

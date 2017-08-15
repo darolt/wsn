@@ -21,6 +21,9 @@ class Ecca: public Optimizer {
     // configuration
     individual_t Run(std::vector<float> energies, unsigned int head_id);
 
+    float GetBestCoverage();
+    float GetBestOverlapping();
+
   private:
     
     std::vector<Individual> CreatePopulation1();

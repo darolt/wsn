@@ -1,8 +1,8 @@
-#include "ecca.h"
-#include "individual.h"
 #include <stdio.h>
 #include <limits>
 #include <algorithm>
+#include "ecca.h"
+#include "individual.h"
 
 Ecca::Ecca(dict_t exclusive, regions_t overlapping,
            std::vector<unsigned int> ids, config_t config)
@@ -17,6 +17,14 @@ Ecca::~Ecca() {
 individual_t
 Ecca::Run(std::vector<float> energies, unsigned int head_id) {
   learning_trace_.clear();
+  // initialize session data
+  energies_ = energies;
+  head_id_ = head_id;
+  total_energy_ = 0.0;
+  best_global_fitness_ = 0.0;
+  for (auto const &energy: energies_)
+    total_energy_ += energy;
+
 
   // find all nodes that are susceptible to sleep (not dead neither ch)
   // depleted nodes and ch should cannot be taken into consideration
@@ -25,27 +33,37 @@ Ecca::Run(std::vector<float> energies, unsigned int head_id) {
     if (energies[idx] != 0 && ids_[idx] != head_id)
       can_sleep.push_back(idx);
 
+
   // reset best global and best locals
   Individual::SetNewRun();
-
   auto population = CreatePopulation1();
+  //printf("population size: %d\n", population.size());
   //auto population_fitness = CalculateFitness(energies, total_energy, population);
   auto fronts = FastNonDominatedSort(population);
-  float crossover_rate = 0.5;
+  //printf("fronts size: %d\n", fronts.size());
+  float crossover_rate = 0.98;
   auto children = Reproduce(population, crossover_rate);
+  //printf("children size: %d\n", children.size());
   //auto children_fitness = CalculateFitness(energies, total_energy, children);
 
   for (unsigned int it = 0; it < max_iterations_; it++) {
+    learning_trace_.push_back(Individual::GetBestFitness().total);
+    //printf("best fitness: %f\n", Individual::GetBestFitness().total);
     population.insert(population.end(), children.begin(), children.end());
+    //printf("population size: %d\n", population.size());
     for (unsigned int idx = 0; idx<population.size(); idx++)
       population[idx].idx_ = idx;
     //auto new_population_fitness = population_fitness + children_fitness;
     fronts = FastNonDominatedSort(population);
+    //printf("fronts size: %d\n", fronts.size());
     auto parents = FindBestParents(fronts);
+    //printf("parents size: %d\n", parents.size());
     std::random_shuffle(parents.begin(), parents.end());
+    //printf("parents size: %d\n", parents.size());
     // TODO randomly select some parents
     population = children;
     children = Reproduce(parents, crossover_rate);
+    //printf("children size: %d\n", children.size());
     //updateFitness(children);    
   } 
 
@@ -87,6 +105,8 @@ Ecca::FastNonDominatedSort(std::vector<Individual> &population) {
   for (unsigned int idx1 = 0; idx1<population.size(); idx1++) {
     auto &individual1 = population[idx1];
     for (unsigned int idx2 = 0; idx2<population.size(); idx2++) {
+      if (idx1 == idx2)
+        continue;
       auto &individual2 = population[idx2];
       if (Dominates(individual1, individual2))
         dom_set[idx1].push_back(idx2);
@@ -98,6 +118,7 @@ Ecca::FastNonDominatedSort(std::vector<Individual> &population) {
       front0.push_back(population[idx1]);
     }
   }
+  //printf("front0 size %d\n", front0.size());
   fronts.push_back(front0);
 
   // calculate higher-ranked fronts
@@ -124,6 +145,10 @@ Ecca::FastNonDominatedSort(std::vector<Individual> &population) {
 
 bool
 Ecca::Dominates(Individual &individual1, Individual &individual2) {
+  ////printf("i11 : %f\n", individual1.GetFitness().term1);
+  ////printf("i12 : %f\n", individual1.GetFitness().term2);
+  ////printf("i21 : %f\n", individual2.GetFitness().term1);
+  ////printf("i22 : %f\n", individual2.GetFitness().term2);
   if ((individual1.GetFitness().term1 > individual2.GetFitness().term1) &&
       (individual1.GetFitness().term2 > individual2.GetFitness().term2))
     return true;
@@ -227,5 +252,30 @@ Ecca::CrowdedSorting(std::vector<Individual> &group) {
       }
     }
   }
+}
+
+float
+Ecca::GetBestOverlapping() {
+  auto coverage_info = Individual::GetBestFitness().coverage_info;
+  if (coverage_info.partial_overlapping == 0.0 &&
+      coverage_info.total_overlapping   == 0.0)
+    best_overlapping_ = 0.0;
+  else
+    best_overlapping_ = coverage_info.partial_overlapping/
+                        coverage_info.total_overlapping;
+
+  return best_overlapping_;
+}
+
+float
+Ecca::GetBestCoverage() {
+  auto coverage_info = Individual::GetBestFitness().coverage_info;
+  if (coverage_info.partial_coverage == 0.0 &&
+      coverage_info.total_coverage   == 0.0)
+    best_coverage_ = 0.0;
+  else
+    best_coverage_    = coverage_info.partial_coverage/
+                        coverage_info.total_coverage;
+  return best_coverage_;
 }
 

@@ -65,7 +65,7 @@ def plot_traces(traces):
   nb_columns   = len([1 for k, v in first_tracer.iteritems() if v[3]])
   fig, ax      = plt.subplots(nrows=1, ncols=nb_columns)
 
-  colors = ['b-', 'r-', 'k-', 'y-', 'g-', 'c-', 'm-']
+  colors = ['b-', 'r-', 'k-', 'y-', 'g-', 'c-', 'm-', 'b--', 'r--', 'k--', 'y--']
 
   color_idx = 0
   for scenario, tracer in traces.iteritems():

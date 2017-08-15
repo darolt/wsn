@@ -8,6 +8,7 @@ from python.utils.regions_converter import *
 from cc.genetic_algorithm import *
 from cc.pso import *
 from cc.modified_pso import *
+from cc.ecca import *
 from multiprocessing.dummy import Pool as ThreadPool
 
 """Wraps the C++ instance that executes the PSO and also calculates
@@ -65,7 +66,10 @@ class SleepScheduler(object):
     learning_trace     = self._pso.GetLearningTrace()
     best_coverage      = self._pso.GetBestCoverage()
     best_overlapping   = self._pso.GetBestOverlapping()
-    print(best_overlapping)
+
+    #print("best cov: %f, best over: %f" %(best_coverage, best_overlapping))
+    #print("init: %f, final: %f" %(learning_trace[0], learning_trace[-1]))
+    #print(sum(ord(x) for x in best_configuration))
 
     #logging.info('search finished.')
     #print(self._best_configuration)
@@ -80,9 +84,6 @@ class SleepScheduler(object):
 
     #print("sleeping nodes %d out of %d" %(nb_sleeping_nodes, len(best_configuration)))
     #print([x.id for x in self._cluster if x.alive])
-    #print(coverage)
-    #print(overlapping)
-    #print(sum(ord(x) for x in best_configuration))
 
     # set cluster's nodes to sleep accordingly to optimization algorithm
     for idx, node in enumerate(sensor_nodes):
