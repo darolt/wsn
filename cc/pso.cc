@@ -26,7 +26,7 @@ Pso::Optimize(const vector<u_int> &can_sleep) {
 
   float acceleration = 1.0, phi1 = 2.0, phi2 = 2.0;
   for (u_int it = 0; it < max_iterations_; it++) {
-    learning_trace_.push_back(best_global_fitness_);
+    PushIntoLearningTraces(best_global_fitness_);
     for (u_int individual_idx = 0; individual_idx < nb_individuals_; individual_idx++) {
       individual_t &individual = population_[individual_idx];
       

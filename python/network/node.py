@@ -37,6 +37,7 @@ class Node(object):
     # for coverage purposes
     self.neighbors = []
     self.nb_neighbors = -1
+    self.exclusive_radius = 0
 
   @property
   def next_hop(self):
@@ -73,7 +74,7 @@ class Node(object):
     return wrapper
 
   @_only_active_nodes
-  def update_sleep_prob(self, nb_neighbors):
+  def update_sleep_prob(self):
     """Update the sleep probability. This method supposes that the
     endpoint is the cluster head
     """

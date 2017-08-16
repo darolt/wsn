@@ -17,7 +17,7 @@ ModifiedPso::Optimize(const vector<u_int> &can_sleep) {
   uniform_real_distribution<float> distribution(0.0, 1.0);
   float mutation_rate, crossover_rate1, crossover_rate2;
   for (u_int it = 0; it < max_iterations_; it++) {
-    learning_trace_.push_back(best_global_fitness_);
+    PushIntoLearningTraces(best_global_fitness_);
     for (u_int particle_idx = 0; particle_idx < nb_individuals_; particle_idx++) {
       individual_t &particle = population_[particle_idx];
       mutation_rate   = wmax_ - (wmax_-wmin_)*it/float(max_iterations_);

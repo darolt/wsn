@@ -5,14 +5,6 @@
 #include <random>
 #include "optimizer.h"
 
-typedef struct {
-  float total;
-  float term1;
-  float term2;
-  coverage_info_t coverage_info;
-} fitness_t;
-
-
 class Individual {
   public:
     //Individual();

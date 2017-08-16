@@ -117,8 +117,8 @@ WMIN = 0.1
 
 
 ## Other configurations:
-# GRID
-GRID_PRECISION = 0.1 # in meters
+# grid precision (the bigger the faster the simulation)
+GRID_PRECISION = 1 # in meters
 # useful constants (for readability)
 INFINITY = float('inf')
 MINUS_INFINITY = float('-inf')

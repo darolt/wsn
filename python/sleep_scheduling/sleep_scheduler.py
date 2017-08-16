@@ -19,28 +19,26 @@ class SleepScheduler(object):
   def __init__(self, cluster, optimizer_class):
     # need to update neighbors through this method, so grid can be
     # generated faster
-    cluster.update_sleep_prob()
+    cluster.update_neighbors()
     self._cluster = cluster
     
     grid = Grid()
     for node in cluster.get_sensor_nodes():
       grid.add_node(node, cf.COVERAGE_RADIUS)
     regions_converter = RegionsConverter(grid)
-    regions_buff = regions_converter.convert()    
+    exclusive_regions, overlapping_regions = regions_converter.convert()
 
-    ids = [node.id for node in cluster.get_sensor_nodes()] 
-    config_int = {}
-    config_int['NB_INDIVIDUALS'] = cf.NB_INDIVIDUALS
-    config_int['MAX_ITERATIONS'] = cf.MAX_ITERATIONS
-    config_float = {}
-    config_float['FITNESS_ALPHA'] = cf.FITNESS_ALPHA
-    config_float['FITNESS_BETA'] = cf.FITNESS_BETA
-    config_float['WMAX'] = cf.WMAX
-    config_float['WMIN'] = cf.WMIN
+    config_int =   {'NB_INDIVIDUALS': cf.NB_INDIVIDUALS,
+                    'MAX_ITERATIONS': cf.MAX_ITERATIONS}
+    config_float = {'FITNESS_ALPHA' : cf.FITNESS_ALPHA,
+                    'FITNESS_BETA'  : cf.FITNESS_BETA,
+                    'WMAX'          : cf.WMAX,
+                    'WMIN'          : cf.WMIN}
 
     configuration = (config_int, config_float)
+    ids = [node.id for node in cluster.get_sensor_nodes()] 
     
-    self._pso = optimizer_class(regions_buff[0], regions_buff[1],
+    self._optimizer = optimizer_class(exclusive_regions, overlapping_regions,
                                 ids, configuration)
 
   def schedule(self):
@@ -62,10 +60,12 @@ class SleepScheduler(object):
     energies = [node.energy_source.energy for node in sensor_nodes]
     head_id  = (self._cluster.get_heads())[0].id
 
-    best_configuration = self._pso.Run(energies, head_id)
-    learning_trace     = self._pso.GetLearningTrace()
-    best_coverage      = self._pso.GetBestCoverage()
-    best_overlapping   = self._pso.GetBestOverlapping()
+    best_configuration = self._optimizer.Run(energies, head_id)
+    best_coverage      = self._optimizer.GetBestCoverage()
+    best_overlapping   = self._optimizer.GetBestOverlapping()
+    learning_trace     = self._optimizer.GetLearningTrace()
+    term1_trace        = self._optimizer.GetTerm1Trace()
+    term2_trace        = self._optimizer.GetTerm2Trace()
 
     #print("best cov: %f, best over: %f" %(best_coverage, best_overlapping))
     #print("init: %f, final: %f" %(learning_trace[0], learning_trace[-1]))
@@ -81,6 +81,10 @@ class SleepScheduler(object):
     log['nb_sleeping']     = float(sum(ord(x) for x in best_configuration)/float(nb_alive))
     log['initial_fitness'] = learning_trace[0]
     log['final_fitness']   = learning_trace[-1]
+    log['term1_initial']   = term1_trace[0]
+    log['term1_final']     = term1_trace[-1]
+    log['term2_initial']   = term2_trace[0]
+    log['term2_final']     = term2_trace[-1]
 
     #print("sleeping nodes %d out of %d" %(nb_sleeping_nodes, len(best_configuration)))
     #print([x.id for x in self._cluster if x.alive])

@@ -36,16 +36,8 @@ Optimizer::~Optimizer() {
 
 individual_t
 Optimizer::Run(vector<float> energies, u_int head_id) {
-  // for tracing the learning of pso
-  learning_trace_.clear();
-
-  // initialize session data
-  energies_ = energies;
-  head_id_ = head_id;
-  total_energy_ = 0.0;
-  best_global_fitness_ = 0.0;
-  for (auto const &energy: energies_)
-    total_energy_ += energy;
+  ClearLearningTraces();
+  InitializeSessionData(energies, head_id);
 
   // find all nodes that are susceptible to sleep (not dead neither ch)
   // depleted nodes and ch should cannot be taken into consideration
@@ -76,7 +68,7 @@ Optimizer::CreatePopulation() {
 
 population_fitness_t
 Optimizer::CalculateFitness(vector<individual_t> &group) {
-  vector<fitness_ret_t> group_fitness;
+  vector<fitness_t> group_fitness;
   for (u_int idx = 0; idx < group.size(); idx++) {
     auto const &individual = group[idx];
     auto fitness_ret = Fitness(individual, 0);
@@ -95,9 +87,9 @@ Optimizer::UpdateFitness() {
       best_locals_[idx] = individual;
       best_local_fitness_[idx] = individual_fitness;
     }
-    if (individual_fitness > best_global_fitness_) {
+    if (individual_fitness > best_global_fitness_.total) {
       best_global_ = individual;
-      best_global_fitness_ = individual_fitness;
+      best_global_fitness_ = fitness_ret;
       auto coverage_info = fitness_ret.coverage_info;
       if (coverage_info.partial_coverage == 0.0 &&
           coverage_info.total_coverage   == 0.0)
@@ -122,7 +114,7 @@ Optimizer::Optimize(const vector<u_int> &can_sleep) {
   printf("Calling Optimizer::Optimize!");
 }
 
-fitness_ret_t
+fitness_t
 Optimizer::Fitness(const individual_t &individual, char do_print) {
   vector<u_int> sleep_nodes;
   float partial_energy = 0.0;
@@ -182,7 +174,7 @@ Optimizer::Fitness(const individual_t &individual, char do_print) {
     printf("fitness %f, 1: %f, 2: %f\n", fitness_val, term1, term2);
   }
 
-  fitness_ret_t  fitness_ret = {.total = fitness_val,
+  fitness_t  fitness_ret = {.total = fitness_val,
                                 .term1 = term1,
                                 .term2 = term2,
                                 .coverage_info = coverage_info};
@@ -213,6 +205,16 @@ Optimizer::GetLearningTrace() {
   return learning_trace_;
 }
 
+vector<float>
+Optimizer::GetTerm1Trace() {
+  return term1_trace_;
+}
+
+vector<float>
+Optimizer::GetTerm2Trace() {
+  return term2_trace_;
+}
+
 float
 Optimizer::GetBestCoverage() {
   return best_coverage_;
@@ -223,3 +225,26 @@ Optimizer::GetBestOverlapping() {
   return best_overlapping_;
 }
 
+void
+Optimizer::ClearLearningTraces() {
+  learning_trace_.clear();
+  term1_trace_.clear();
+  term2_trace_.clear();
+}
+
+void 
+Optimizer::InitializeSessionData(const float_v &energies, const u_int &head_id) {
+  energies_ = energies;
+  head_id_ = head_id;
+  total_energy_ = 0.0;
+  best_global_fitness_.total = 0.0;
+  for (auto const &energy: energies_)
+    total_energy_ += energy;
+}
+
+void
+Optimizer::PushIntoLearningTraces(const fitness_t &fitness) {
+  learning_trace_.push_back(fitness.total);
+  term1_trace_.push_back(fitness.term1);
+  term2_trace_.push_back(fitness.term2);
+}

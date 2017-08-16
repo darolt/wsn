@@ -30,8 +30,8 @@ typedef struct {
   float term1;
   float term2;
   coverage_info_t coverage_info;
-} fitness_ret_t;
-typedef std::vector<fitness_ret_t> population_fitness_t;
+} fitness_t;
+typedef std::vector<fitness_t> population_fitness_t;
 
 class Optimizer {
 
@@ -53,18 +53,17 @@ class Optimizer {
     void SetAlpha(float value);
     void SetBeta(float value);
     std::vector<float> GetLearningTrace();
+    std::vector<float> GetTerm1Trace();
+    std::vector<float> GetTerm2Trace();
     float GetBestCoverage();
     float GetBestOverlapping();
 
   private:
     Regions *regions_;
 
-    float fitness_alpha_;
-    float fitness_beta_;
-
     // Returns a float indicating how fit a individual/particle is,
     // and the coverage and overlapping areas for that particle.
-    fitness_ret_t Fitness(const individual_t &individual, char do_print);
+    fitness_t Fitness(const individual_t &individual, char do_print);
 
   protected:
     // attributes
@@ -74,6 +73,9 @@ class Optimizer {
     u_int max_iterations_;
     float wmax_;
     float wmin_;
+
+    float fitness_alpha_;
+    float fitness_beta_;
 
     // std::vector with all individuals
     std::vector<individual_t> population_;
@@ -86,13 +88,15 @@ class Optimizer {
     // (used for optimization)
     std::vector<float> best_local_fitness_;
     // fitness of the best individual in the history
-    float best_global_fitness_;
+    fitness_t best_global_fitness_;
     // coverage and overlapping for the best configuration found in the
     // last run. These are not necessarily the best coverages found.
     float best_coverage_;
     float best_overlapping_;
     // learning trace for the last run
     std::vector<float> learning_trace_;
+    std::vector<float> term1_trace_;
+    std::vector<float> term2_trace_;
 
     // random related
     std::default_random_engine generator_;
@@ -111,5 +115,10 @@ class Optimizer {
     population_fitness_t CalculateFitness(std::vector<individual_t> &group);
 
     void UpdateFitness();
+
+    void ClearLearningTraces();
+    void InitializeSessionData(const float_v &energies, const u_int &head_id);
+
+    void PushIntoLearningTraces(const fitness_t &fitness);
 };
 #endif //OPTIMIZER_H

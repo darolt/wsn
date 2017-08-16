@@ -48,11 +48,11 @@ class Network(list):
     self.sleep_scheduling = None
 
   def simulate(self):
-    # TODO print configs in file
     tracer = Tracer()
 
     self.routing_protocol.pre_communication(self)
 
+    all_alive = 1
     self.deaths_this_round = 0
     with_sleep_scheduling = hasattr(self, 'sleep_scheduler_class')
     for round_nb in range(0, cf.MAX_ROUNDS):
@@ -79,11 +79,18 @@ class Network(list):
             for key, value in log.iteritems():
               tracer[key][2].append(value)
 
+      # check if someone died
+      if all_alive == 1 and self.deaths_this_round != 0:
+        all_alive = 0
+        self.first_depletion = round_nb
+
       # clears dead counter
       self.deaths_this_round = 0
       self.routing_protocol.broadcast(self)
 
       self._run_round(round_nb)
+
+    tracer['first_depletion'][2].append(self.first_depletion)
 
     return tracer
 
@@ -240,7 +247,7 @@ class Network(list):
       clusters.append(cluster)
     return clusters
 
-  def _calculate_nb_neighbors(self, target_node, coverage_radius):
+  def _calculate_nb_neighbors(self, target_node):
     """Calculate the number of neighbors given the sensor coverage
     radius.
     """
@@ -254,17 +261,32 @@ class Network(list):
       return target_node.nb_neighbors - nb_dead_neighbors
 
     nb_neighbors = 0
+    shortest_distance = cf.COVERAGE_RADIUS*2
     for node in self.get_alive_nodes():
-      if node != target_node:
-        distance = calculate_distance(target_node, node)
-        if distance <= coverage_radius:
-          nb_neighbors += 1
-          target_node.neighbors.append(node) 
-    return nb_neighbors
+      if node == target_node:
+        continue
+      distance = calculate_distance(target_node, node)
+      if distance <= cf.COVERAGE_RADIUS:
+        nb_neighbors += 1
+        target_node.neighbors.append(node) 
+        if distance < shortest_distance:
+          shortest_distance = distance
+
+    if shortest_distance != cf.INFINITY:
+      exclusive_radius = shortest_distance - cf.COVERAGE_RADIUS
+      if exclusive_radius < 0:
+        exclusive_radius = 0.0
+    
+    node.nb_neighbors = nb_neighbors
+    node.exclusive_radius = exclusive_radius
+
+  def update_neighbors(self):
+    for node in self.get_alive_nodes():
+      self._calculate_nb_neighbors(node)
+
+    self.update_sleep_prob()
 
   def update_sleep_prob(self):
     for node in self.get_alive_nodes():
-      nb_neighbors = self._calculate_nb_neighbors(node, cf.COVERAGE_RADIUS)
-      node.nb_neighbors = nb_neighbors
-      node.update_sleep_prob(nb_neighbors)
+      node.update_sleep_prob()
 

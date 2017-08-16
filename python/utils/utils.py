@@ -51,23 +51,54 @@ def plot_curves(curves):
 
 def print_coverage_info(traces):
   for scenario_name, tracer in traces.iteritems():
+    args = (scenario_name, tracer['first_depletion'][2][0])
+    print("%s: first depletion at %d" % args)
     for trace_name, trace in tracer.iteritems():
       if not trace[4]:
         continue
-      values  = np.array(trace[2])
-      mean    = np.nanmean(values)
-      stdev   = np.nanstd(values)
-      args = (scenario_name, trace_name, mean, stdev)
+      values = np.array(trace[2])
+      mean   = np.nanmean(values)
+      stdev  = np.nanstd(values)
+      args   = (scenario_name, trace_name, mean, stdev)
       print("%s: %s avg (std): %f (%f)" % args)
+
+def save2csv(traces):
+  to_csv = []
+  for scenario_name, tracer in traces.iteritems():
+    tmp = {'scenario_name': scenario_name,
+           'first_depletion': tracer['first_depletion'][2][0]}
+    args = (scenario_name, tracer['first_depletion'][2][0])
+    print("%s: first depletion at %d" % args)
+    for trace_name, trace in tracer.iteritems():
+      if not trace[4]:
+        continue
+      values = np.array(trace[2])
+      mean   = np.nanmean(values)
+      stdev  = np.nanstd(values)
+      args   = (scenario_name, trace_name, mean, stdev)
+      print("%s: %s avg (std): %f (%f)" % args)
+
+      tmp[trace_name+ ' (mean)']  = mean
+      tmp[trace_name+ ' (stdev)'] = stdev
+
+    to_csv.append(tmp)
+
+  df = pd.DataFrame(to_csv)
+  dir_path = cf.RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
+  os.makedirs(dir_path)
+  df.to_csv(dir_path + 'results_summary.csv')
+
 
 def plot_traces(traces):
   first_tracer = traces.itervalues().next()
   nb_columns   = len([1 for k, v in first_tracer.iteritems() if v[3]])
   fig, ax      = plt.subplots(nrows=1, ncols=nb_columns)
 
-  colors = ['b-', 'r-', 'k-', 'y-', 'g-', 'c-', 'm-', 'b--', 'r--', 'k--', 'y--']
+  colors = ['b', 'r', 'k', 'y', 'g', 'c', 'm']
+  line_style = ['-', '--', '-.', ':']
 
   color_idx = 0
+  line_idx  = 0
   for scenario, tracer in traces.iteritems():
     subplot_idx = 1
     for trace_name, trace in tracer.iteritems():
@@ -76,12 +107,14 @@ def plot_traces(traces):
       ax = plt.subplot(1, nb_columns, subplot_idx)
       #ax.set_title(trace_name)
       X = range(0, len(trace[2]))
-      plt.plot(X, trace[2], colors[color_idx%len(colors)], label=scenario)
+      color_n_line = colors[color_idx] + line_style[line_idx]
+      plt.plot(X, trace[2], color_n_line, label=scenario)
       plt.xlabel(trace[1])
       plt.ylabel(trace[0])
       plt.legend()
       subplot_idx += 1
-    color_idx += 1
+    color_idx = (color_idx+1)%len(colors)
+    line_idx  = (line_idx+1)%len(line_style)
       
   plt.show()
 
@@ -150,7 +183,7 @@ def plot_time_of_death(network):
 
 def log_curves(curves):
   """Write results."""
-  dir_path = RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
+  dir_path = cf.RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
   os.makedirs(dir_path)
   
   # write alive_nodes vs round number
@@ -160,7 +193,7 @@ def log_curves(curves):
   # write nodes position and time of death
 
 def log_coverages(pso_wrapper):
-  dir_path = RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
+  dir_path = cf.RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
   os.makedirs(dir_path)
   df = pd.DataFrame.from_dict(pso_wrapper._cov_log)
   df.to_csv(dir_path + 'cov_log.txt')

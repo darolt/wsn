@@ -26,7 +26,7 @@ GeneticAlgorithm::Optimize(const vector<u_int> &can_sleep) {
     mutation_rate   = wmax_ - (wmax_-wmin_)*it/float(max_iterations_);
     crossover_rate = 1.0 - it/float(max_iterations_);
 
-    learning_trace_.push_back(best_global_fitness_);
+    PushIntoLearningTraces(best_global_fitness_);
 
     // only worst fit individuals are replaced
     // best fit are cloned for the next generation

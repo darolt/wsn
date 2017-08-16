@@ -57,8 +57,9 @@ if __name__ == '__main__':
     network.reset()
 
     #log_curves(trace_alive_network)
-  plot_traces(traces)
   if cf.TRACE_COVERAGE:
     print_coverage_info(traces)
 
+  save2csv(traces)
+  plot_traces(traces)
 

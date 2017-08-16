@@ -61,23 +61,25 @@ class Grid(object):
     by a single node.
     """
     logging.info("adding node %d to grid" % (node.id))
+    if node.exclusive_radius > 0:
+      new_region = Region(math.pi*node.exclusive_radius**2, set([node.id]))
+      self._exclusive_regions.append(new_region)
+
     if node.nb_neighbors == 0:
-      new_region = Region(math.pi*coverage_radius**2, set([node.id]))
-      self._exclusive_regions.append(new_region)
       return
-    else:
-      # find nearest neighbor
-      shortest_distance = cf.INFINITY
-      for neighbor in node.neighbors:
-        distance = calculate_distance(node, neighbor)
-        if distance < shortest_distance:
-          shortest_distance = distance
-      # create exclusive area
-      exclusive_radius = shortest_distance - coverage_radius
-      if exclusive_radius < 0:
-        exclusive_radius = 0
-      new_region = Region(math.pi*exclusive_radius**2, set([node.id]))
-      self._exclusive_regions.append(new_region)
+    #else:
+    #  # find nearest neighbor
+    #  shortest_distance = cf.INFINITY
+    #  for neighbor in node.neighbors:
+    #    distance = calculate_distance(node, neighbor)
+    #    if distance < shortest_distance:
+    #      shortest_distance = distance
+    #  # create exclusive area
+    #  exclusive_radius = shortest_distance - coverage_radius
+    #  if exclusive_radius < 0:
+    #    exclusive_radius = 0
+    #  new_region = Region(math.pi*exclusive_radius**2, set([node.id]))
+    #  self._exclusive_regions.append(new_region)
 
     # covers a rectangular area around the circle, but paints only area
     # inside the radius
@@ -90,7 +92,7 @@ class Grid(object):
       for pixel_y in np.arange(initial_y, final_y, cf.GRID_PRECISION):
         distance = calculate_distance_point(pixel_x, pixel_y,
                                             node.pos_x, node.pos_y)
-        if distance < coverage_radius and distance > exclusive_radius:
+        if distance < coverage_radius and distance > node.exclusive_radius:
           # paint
           self._paint_pixel(str(pixel_x), str(pixel_y), node.id)
 

@@ -16,15 +16,8 @@ Ecca::~Ecca() {
 
 individual_t
 Ecca::Run(std::vector<float> energies, unsigned int head_id) {
-  learning_trace_.clear();
-  // initialize session data
-  energies_ = energies;
-  head_id_ = head_id;
-  total_energy_ = 0.0;
-  best_global_fitness_ = 0.0;
-  for (auto const &energy: energies_)
-    total_energy_ += energy;
-
+  ClearLearningTraces();
+  InitializeSessionData(energies, head_id);
 
   // find all nodes that are susceptible to sleep (not dead neither ch)
   // depleted nodes and ch should cannot be taken into consideration
@@ -47,7 +40,7 @@ Ecca::Run(std::vector<float> energies, unsigned int head_id) {
   //auto children_fitness = CalculateFitness(energies, total_energy, children);
 
   for (unsigned int it = 0; it < max_iterations_; it++) {
-    learning_trace_.push_back(Individual::GetBestFitness().total);
+    PushIntoLearningTraces(Individual::GetBestFitness());
     //printf("best fitness: %f\n", Individual::GetBestFitness().total);
     population.insert(population.end(), children.begin(), children.end());
     //printf("population size: %d\n", population.size());
@@ -149,11 +142,18 @@ Ecca::Dominates(Individual &individual1, Individual &individual2) {
   ////printf("i12 : %f\n", individual1.GetFitness().term2);
   ////printf("i21 : %f\n", individual2.GetFitness().term1);
   ////printf("i22 : %f\n", individual2.GetFitness().term2);
-  if ((individual1.GetFitness().term1 > individual2.GetFitness().term1) &&
-      (individual1.GetFitness().term2 > individual2.GetFitness().term2))
-    return true;
-  else
-    return false;
+  if (fitness_alpha_ != 0.0 && fitness_beta_ != 0.0) {
+    if ((individual1.GetFitness().term1 > individual2.GetFitness().term1) &&
+        (individual1.GetFitness().term2 > individual2.GetFitness().term2))
+      return true;
+  } else if (fitness_alpha_ != 0.0 && fitness_beta_ == 0.0) {
+    if (individual1.GetFitness().term1 > individual2.GetFitness().term1)
+      return true;
+  } else if (fitness_alpha_ == 0.0 && fitness_beta_ != 0.0) {
+    if (individual1.GetFitness().term2 > individual2.GetFitness().term2)
+      return true;
+  }
+  return false;
 }
 
 std::vector<Individual>
