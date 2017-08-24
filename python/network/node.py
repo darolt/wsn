@@ -104,8 +104,7 @@ class Node(object):
   def is_head(self):
     if self.next_hop == cf.BSID and self.id != cf.BSID and self.alive:
       return 1
-    else:
-      return 0
+    return 0
 
   def is_ordinary(self):
     return 1 if self.next_hop != cf.BSID and self.id != cf.BSID else 0

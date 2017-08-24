@@ -32,6 +32,7 @@ class SleepScheduler(object):
                     'MAX_ITERATIONS': cf.MAX_ITERATIONS}
     config_float = {'FITNESS_ALPHA' : cf.FITNESS_ALPHA,
                     'FITNESS_BETA'  : cf.FITNESS_BETA,
+                    'FITNESS_GAMMA' : cf.FITNESS_GAMMA,
                     'WMAX'          : cf.WMAX,
                     'WMIN'          : cf.WMIN}
 
@@ -58,9 +59,9 @@ class SleepScheduler(object):
     sensor_nodes = self._cluster.get_sensor_nodes()
     node_ids = [node.id for node in sensor_nodes]
     energies = [node.energy_source.energy for node in sensor_nodes]
-    head_id  = (self._cluster.get_heads())[0].id
+    #head_id  = (self._cluster.get_heads())[0].id
 
-    best_configuration = self._optimizer.Run(energies, head_id)
+    best_configuration = self._optimizer.Run(energies)
     best_coverage      = self._optimizer.GetBestCoverage()
     best_overlapping   = self._optimizer.GetBestOverlapping()
     learning_trace     = self._optimizer.GetLearningTrace()
@@ -75,10 +76,13 @@ class SleepScheduler(object):
     #print(self._best_configuration)
     # actually put nodes to sleep
     nb_alive = len(self._cluster.get_alive_nodes())
+    nb_sleeping = sum(ord(y) for x, y in zip(self._cluster, best_configuration) if x.alive)
+    sleeping_rate = float(nb_sleeping)/float(nb_alive)
+    print("coverage %f, active rate %f" %(best_coverage, 1-sleeping_rate))
     log = {}
     log['coverage']        = best_coverage
     log['overlapping']     = best_overlapping
-    log['nb_sleeping']     = float(sum(ord(x) for x in best_configuration)/float(nb_alive))
+    log['nb_sleeping']     = sleeping_rate 
     log['initial_fitness'] = learning_trace[0]
     log['final_fitness']   = learning_trace[-1]
     log['term1_initial']   = term1_trace[0]

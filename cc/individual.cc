@@ -76,9 +76,7 @@ Individual::SampleNewGenes() {
   std::uniform_real_distribution<float> distribution(0.0, 1.0);
   for (unsigned int idx = 0; idx < genes_.size(); idx++) {
     float random = distribution(generator_);
-    if ((optimizer_->ids_[idx] == optimizer_->head_id_) || 
-        (optimizer_->energies_[idx] == 0.0))
-      // cluster head cannot be put to sleep
+    if (optimizer_->energies_[idx] == 0.0)
       genes_[idx] = 0;
     else
       genes_[idx] = (random < 0.5) ? 1 : 0;
@@ -101,54 +99,30 @@ Individual::GetGenes() {
 fitness_t
 Individual::Fitness() {
   //printf("fitness 1\n");
-  std::vector<unsigned int> sleep_nodes;
-  std::vector<unsigned int> dead_nodes;
-  unsigned int alive_nodes = 0;
-  //printf("sleep: ");
+  std::vector<unsigned int> sleep_nodes, dead_nodes;
+  u_int nb_alive_nodes = 0, nb_active_nodes = 0;
   for (unsigned int idx = 0; idx < optimizer_->nb_nodes_; idx++) {
     // push nodes that are dead
-    if (optimizer_->energies_[idx] == 0 ) {
+    if (optimizer_->energies_[idx] == 0.0 ) {
       dead_nodes.push_back(optimizer_->ids_[idx]);
     } else {
-      alive_nodes++;
+      nb_alive_nodes++;
       if (genes_[idx] == 1) // sleeping nodes
         sleep_nodes.push_back(optimizer_->ids_[idx]);
-    }
-  }
-        //printf("\n");
-
-  // calculate sum(ei-avg(e)), sum(max(ei-avg(e),0)), sum(min(ei-avg(e),0))
-  float average_energy = (alive_nodes==0) ? 0.0 : optimizer_->total_energy_/alive_nodes;
-  float energies_dev = 0.0, neg_energy_dev = 0.0, pos_energy_dev = 0.0;
-  for (unsigned int idx = 0; idx < optimizer_->nb_nodes_; idx++) {
-    //printf("ene: %f\n", optimizer_->energies_[idx]);
-    if (optimizer_->energies_[idx] > 0.0) { //skip dead nodes
-      float energy_dev = optimizer_->energies_[idx] - average_energy;
-      if (genes_[idx] == 0) //only for awake nodes
-        energies_dev += energy_dev;
-
-      // for all alive nodes
-      if (energy_dev < 0.0)
-        neg_energy_dev += energy_dev;
-      else
-        pos_energy_dev += energy_dev;
+      else // active node
+        nb_active_nodes++;
     }
   }
 
-  auto coverage_info = optimizer_->regions_->GetCoverage(sleep_nodes, dead_nodes);
+  auto coverage_info = optimizer_->regions_->GetCoverage(genes_, optimizer_->energies_);
 
-  //printf("ene_dev %f\n", energies_dev);
-  //printf("neg_dev %f\n", neg_energy_dev);
-  //printf("pos_dev %f\n", pos_energy_dev);
   float total, term1 = 0.0, term2 = 0.0;
-  if (pos_energy_dev-neg_energy_dev != 0.0)
-    term1 = (energies_dev-neg_energy_dev)/(pos_energy_dev-neg_energy_dev);
-  //printf("term1: %f\n", term1);
+  if (nb_alive_nodes != 0)
+    term1 = 1 - nb_active_nodes/float(nb_alive_nodes);
 
-  if (coverage_info.total_coverage != 0)
-    term2 = coverage_info.exclusive_area/coverage_info.total_coverage;
+  if (coverage_info.total_coverage != 0.0)
+    term2 = coverage_info.partial_coverage/coverage_info.total_coverage;
 
-  //printf("term2: %f\n", term2);
   total = optimizer_->fitness_alpha_*term1 + optimizer_->fitness_beta_*term2;
 
   fitness_ = {.total = total,
@@ -156,6 +130,7 @@ Individual::Fitness() {
               .term2 = term2,
               .coverage_info = coverage_info};
 
+  // update if best fitness was improved
   if (days_alive_ == 0 || fitness_.total > best_fitness_.total)
     best_fitness_ = fitness_;
 

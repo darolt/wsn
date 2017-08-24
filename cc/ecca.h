@@ -19,7 +19,7 @@ class Ecca: public Optimizer {
     // the learning trace (trace of the best fitness value at each iteration);
     // and a std::vector with the coverage and overlapping areas for the best
     // configuration
-    individual_t Run(std::vector<float> energies, unsigned int head_id);
+    individual_t Run(std::vector<float> energies);
 
     float GetBestCoverage();
     float GetBestOverlapping();

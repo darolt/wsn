@@ -29,8 +29,11 @@ class Network(list):
     for node in self:
       self._dict[node.id] = node
 
-    self.perform_two_level_comm = 0
+    self.perform_two_level_comm = 1
     self.round = 0
+    self.centroids = []
+    self.routing_protocol = None
+    self.sleep_scheduler_class = None
 
     self.initial_energy = self.get_remaining_energy()
 
@@ -43,9 +46,10 @@ class Network(list):
       node.reactivate()
 
     self.round = 0
+    self.centroids = []
 
     self.routing_protocol = None
-    self.sleep_scheduling = None
+    self.sleep_scheduler_class = None
 
   def simulate(self):
     tracer = Tracer()
@@ -53,36 +57,39 @@ class Network(list):
     self.routing_protocol.pre_communication(self)
 
     all_alive = 1
+    percent70_alive = 1
     self.deaths_this_round = 0
-    with_sleep_scheduling = hasattr(self, 'sleep_scheduler_class')
+
+    if self.sleep_scheduler_class:
+      self._sleep_scheduler = SleepScheduler(self, self.sleep_scheduler_class)
+
     for round_nb in range(0, cf.MAX_ROUNDS):
       self.round = round_nb
       print_args = (round_nb, self.get_remaining_energy())
       print("round %d: total remaining energy: %f" % print_args)
-      if not self.someone_alive():
+      nb_alive_nodes = self.count_alive_nodes()
+      if nb_alive_nodes == 0:
         break
-      tracer['alive_nodes'][2].append(self.count_alive_nodes())
-      tracer['energies'][2].append(self.get_remaining_energy())
+      tracer['alive_nodes'][2].append(nb_alive_nodes)
+      if cf.TRACE_ENERGY:
+        tracer['energies'][2].append(self.get_remaining_energy())
+
+      if self.sleep_scheduler_class:
+        log = self._sleep_scheduler.schedule()
+        for key, value in log.iteritems():
+          tracer[key][2].append(value)
 
       self.routing_protocol.setup_phase(self, round_nb)
 
-      if round_nb == 0 and with_sleep_scheduling:
-        clusters = self.split_in_clusters()
-        self._sleep_schedulers = [SleepScheduler(cluster, self.sleep_scheduler_class)
-                                  for cluster in clusters]
-
-      if with_sleep_scheduling:
-        for i, sleep_scheduler in enumerate(self._sleep_schedulers):
-          log = sleep_scheduler.schedule()
-          # only first cluster log is shown
-          if i == 0:
-            for key, value in log.iteritems():
-              tracer[key][2].append(value)
-
       # check if someone died
-      if all_alive == 1 and self.deaths_this_round != 0:
-        all_alive = 0
-        self.first_depletion = round_nb
+      if self.deaths_this_round != 0:
+        if all_alive == 1:
+          all_alive = 0
+          self.first_depletion = round_nb
+        if float(nb_alive_nodes)/float(cf.NB_NODES) < 0.7 and \
+           percent70_alive == 1:
+          percent70_alive = 0
+          self.per30_depletion = round_nb
 
       # clears dead counter
       self.deaths_this_round = 0
@@ -91,6 +98,7 @@ class Network(list):
       self._run_round(round_nb)
 
     tracer['first_depletion'][2].append(self.first_depletion)
+    tracer['30per_depletion'][2].append(self.per30_depletion)
 
     return tracer
 

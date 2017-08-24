@@ -47,25 +47,25 @@ class Optimizer {
     // the learning trace (trace of the best fitness value at each iteration);
     // and a std::vector with the coverage and overlapping areas for the best
     // configuration
-    individual_t Run(float_v energies, u_int head_id);
+    individual_t Run(float_v energies);
 
     // setters & getters
     void SetAlpha(float value);
     void SetBeta(float value);
+    void SetGamma(float value);
     std::vector<float> GetLearningTrace();
     std::vector<float> GetTerm1Trace();
     std::vector<float> GetTerm2Trace();
     float GetBestCoverage();
     float GetBestOverlapping();
 
-  private:
+  protected:
     Regions *regions_;
 
     // Returns a float indicating how fit a individual/particle is,
     // and the coverage and overlapping areas for that particle.
-    fitness_t Fitness(const individual_t &individual, char do_print);
+    virtual fitness_t Fitness(const individual_t &individual);
 
-  protected:
     // attributes
     std::vector<u_int> ids_;
     u_int nb_nodes_;
@@ -76,6 +76,9 @@ class Optimizer {
 
     float fitness_alpha_;
     float fitness_beta_;
+    float fitness_gamma_;
+
+    // session attributes (stored here for convenience)
 
     // std::vector with all individuals
     std::vector<individual_t> population_;
@@ -89,22 +92,24 @@ class Optimizer {
     std::vector<float> best_local_fitness_;
     // fitness of the best individual in the history
     fitness_t best_global_fitness_;
-    // coverage and overlapping for the best configuration found in the
-    // last run. These are not necessarily the best coverages found.
-    float best_coverage_;
-    float best_overlapping_;
-    // learning trace for the last run
-    std::vector<float> learning_trace_;
-    std::vector<float> term1_trace_;
-    std::vector<float> term2_trace_;
 
     // random related
     std::default_random_engine generator_;
 
-    // session attributes (stored here for convenience)
     float_v energies_;
     float total_energy_;
-    u_int head_id_;
+    std::vector<unsigned int> dead_nodes_;
+    unsigned int nb_alive_nodes_;
+
+    // learning traces for the last run
+    std::vector<float> learning_trace_;
+    std::vector<float> term1_trace_;
+    std::vector<float> term2_trace_;
+    // coverage and overlapping for the best configuration found in the
+    // last run. These are not necessarily the best coverages found.
+    float best_coverage_;
+    float best_overlapping_;
+
 
     // methods
     void PrintIndividual(individual_t individual);
@@ -112,12 +117,10 @@ class Optimizer {
     virtual void CreatePopulation();
     virtual void Optimize(const std::vector<u_int> &can_sleep);
 
-    population_fitness_t CalculateFitness(std::vector<individual_t> &group);
-
     void UpdateFitness();
 
     void ClearLearningTraces();
-    void InitializeSessionData(const float_v &energies, const u_int &head_id);
+    void InitializeSessionData(const float_v &energies);
 
     void PushIntoLearningTraces(const fitness_t &fitness);
 };

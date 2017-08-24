@@ -5,6 +5,12 @@ import config as cf
 from python.utils.utils import *
 from python.utils.region import *
 
+def _adjust2grid(pos):
+  """Reallocate the x or y value to the grid.
+  Ex.: 5.454545 -> 5.45 (if GRID_PRECISION == 0.01)
+  """
+  return cf.GRID_PRECISION*int(pos/cf.GRID_PRECISION)
+
 """This module classes are used to calculate the network coverage area
 and the network overlapping area. They are optimized in order to speed
 up simulation time and therefore coding simplicity is sometimes compro-
@@ -31,14 +37,6 @@ class Grid(object):
     # already calculated
     self._exclusive_regions = []
 
-  @staticmethod
-  def _add_offset(pos):
-    """Reallocate the x or y value to the grid.
-    Ex.: 5.454545 -> 5.45 (if GRID_PRECISION == 0.01)
-    """
-    return cf.GRID_PRECISION*int(pos/cf.GRID_PRECISION)
-    #return int(pos/GRID_PRECISION)
-
   def _paint_pixel(self, x, y, id):
     """Paint pixel if not painted yet, or add node id to painted node.
     """
@@ -61,38 +59,27 @@ class Grid(object):
     by a single node.
     """
     logging.info("adding node %d to grid" % (node.id))
-    if node.exclusive_radius > 0:
-      new_region = Region(math.pi*node.exclusive_radius**2, set([node.id]))
-      self._exclusive_regions.append(new_region)
-
-    if node.nb_neighbors == 0:
-      return
-    #else:
-    #  # find nearest neighbor
-    #  shortest_distance = cf.INFINITY
-    #  for neighbor in node.neighbors:
-    #    distance = calculate_distance(node, neighbor)
-    #    if distance < shortest_distance:
-    #      shortest_distance = distance
-    #  # create exclusive area
-    #  exclusive_radius = shortest_distance - coverage_radius
-    #  if exclusive_radius < 0:
-    #    exclusive_radius = 0
-    #  new_region = Region(math.pi*exclusive_radius**2, set([node.id]))
-    #  self._exclusive_regions.append(new_region)
-
     # covers a rectangular area around the circle, but paints only area
     # inside the radius
-    # need to offset x and y, otherwise
-    initial_x = self._add_offset(node.pos_x - coverage_radius)
-    initial_y = self._add_offset(node.pos_y - coverage_radius)
-    final_x   = self._add_offset(node.pos_x + coverage_radius)
-    final_y   = self._add_offset(node.pos_y + coverage_radius)
+    initial_x = _adjust2grid(node.pos_x - coverage_radius)
+    initial_y = _adjust2grid(node.pos_y - coverage_radius)
+    final_x   = _adjust2grid(node.pos_x + coverage_radius)
+    final_y   = _adjust2grid(node.pos_y + coverage_radius)
+    if initial_x < 0.0: 
+      initial_x = 0.0
+    if initial_y < 0.0:
+      initial_y = 0.0
+    if final_x > _adjust2grid(cf.AREA_WIDTH):
+      final_x   = _adjust2grid(cf.AREA_WIDTH)
+    if final_y > _adjust2grid(cf.AREA_LENGTH):
+      final_y   = _adjust2grid(cf.AREA_LENGTH)
+
     for pixel_x in np.arange(initial_x, final_x, cf.GRID_PRECISION):
       for pixel_y in np.arange(initial_y, final_y, cf.GRID_PRECISION):
         distance = calculate_distance_point(pixel_x, pixel_y,
                                             node.pos_x, node.pos_y)
-        if distance < coverage_radius and distance > node.exclusive_radius:
-          # paint
-          self._paint_pixel(str(pixel_x), str(pixel_y), node.id)
+        if distance < coverage_radius:
+          self._paint_pixel(str(_adjust2grid(pixel_x)),
+                            str(_adjust2grid(pixel_y)), 
+                            node.id)
 

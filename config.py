@@ -10,7 +10,7 @@ NOTIFY_POSITION = 0
 
 # Describe the scenarios that will be simulated
 # scenarios should be described in the following format:
-# scenario_name = (routing_topology, sleep_scheduling)
+# scenario_name = (routing_topology, sleep_scheduling, aggregation_model)
 # where routing_topology may be:
 #   'DC'   : Direct Communication
 #   'MTE'  : Minimum Transmission Energy
@@ -26,36 +26,85 @@ NOTIFY_POSITION = 0
 #   'total' : 100% cost
 #   'linear': TODO spec
 #   'log'   : log cost
+# the 4th argument is the nickname of that plot, if not specified (None),
+# then the name is: routing_topology + sleep_scheduling
 
-scenario_0 = ('DC',    None,         'zero')
-scenario_1 = ('LEACH', None,         'zero')
-scenario_2 = ('MTE',   None,         'total')
-scenario_3 = ('FCM',   None,         'zero')
-scenario_4 = ('FCM',  'ModifiedPso', 'zero')
-scenario_5 = ('FCM',  'Pso',         'zero')
-scenario_6 = ('FCM',  'Ecca',        'zero')
+# for convenience, the scenarios list also accepts commands that are
+# executed in run.py
+
+scenario0 = ('DC',    None,         'zero',   None)
+scenario1 = ('LEACH', None,         'zero',   None)
+scenario2 = ('MTE',   None,         'total',  None)
+scenario3 = ('FCM',   None,         'zero',   None)
+scenario4 = ('FCM',  'ModifiedPso', 'zero',   'FCMMPSO')
+scenario5 = ('FCM',  'Pso',         'zero',   None)
+scenario6 = ('FCM',  'Ecca',        'zero',   None)
 # list with all scenarios to simulate
+
+# example of configuration to get first part of results
+#scenarios = [
+#              "cf.FITNESS_ALPHA=0.5",
+#              "cf.FITNESS_BETA=0.5",
+#              scenario3,
+#              "plot_clusters(network)",
+#              scenario0,
+#              scenario1,
+#              scenario2,
+#              scenario5,
+#              scenario4,
+#              "plot_time_of_death(network)",
+#              "plot_traces(traces)",
+#              "network.get_BS().pos_y=-75.0",
+#              scenario3,
+#              scenario0,
+#              scenario1,
+#              scenario2,
+#              scenario5,
+#              scenario4,
+#              "save2csv(traces)",
+#            ]
+
 scenarios = [
-              #scenario_0,
-              #scenario_1,
-              #scenario_2,
-              #scenario_3,
-              "cf.FITNESS_ALPHA=0.5",
-              "cf.FITNESS_BETA=0.5",
-              scenario_4,
-              scenario_5,
-              scenario_6,
-              "cf.FITNESS_ALPHA=1.0",
-              "cf.FITNESS_BETA=0.0",
-              scenario_4,
-              scenario_5,
-              scenario_6,
-              "cf.FITNESS_ALPHA=0.0",
-              "cf.FITNESS_BETA=1.0",
-              scenario_4,
-              scenario_5,
-              scenario_6,
+              "cf.FITNESS_ALPHA=0.40",
+              "cf.FITNESS_BETA=0.60",
+              "cf.FITNESS_GAMMA=0.0",
+              scenario4,
+              #"cf.FITNESS_ALPHA=0.30",
+              #"cf.FITNESS_BETA=0.15",
+              #"cf.FITNESS_GAMMA=0.55",
+              #scenario5,
+              #scenario6,
+              "save2csv_raw(traces)",
             ]
+
+#scenarios = [
+#              "cf.FITNESS_ALPHA=0.5",
+#              "cf.FITNESS_BETA=0.5",
+#              scenario4,
+#              scenario5,
+#              scenario6,
+#              "cf.FITNESS_ALPHA=0.75",
+#              "cf.FITNESS_BETA=0.25",
+#              scenario4,
+#              scenario5,
+#              scenario6,
+#              "cf.FITNESS_ALPHA=0.25",
+#              "cf.FITNESS_BETA=0.75",
+#              scenario4,
+#              scenario5,
+#              scenario6,
+#              "cf.FITNESS_ALPHA=1.0",
+#              "cf.FITNESS_BETA=0.0",
+#              scenario4,
+#              scenario5,
+#              scenario6,
+#              "cf.FITNESS_ALPHA=0.0",
+#              "cf.FITNESS_BETA=1.0",
+#              scenario4,
+#              scenario5,
+#              scenario6,
+#              "save2csv(traces)",
+#            ]
 
 ## tracer options
 TRACE_ENERGY         = 0
@@ -66,23 +115,23 @@ TRACE_LEARNING_CURVE = 0
 
 ## Network configurations:
 # number of nodes
-NB_NODES = 300
+NB_NODES = 100
 # node sensor range
-COVERAGE_RADIUS    = 10 # meters 
+COVERAGE_RADIUS = 15 # meters 
 # node transmission range
 TX_RANGE = 30 # meters
 BSID = -1
 # area definition
-AREA_WIDTH = 250.0
-AREA_LENGTH = 250.0
+AREA_WIDTH = 100.0
+AREA_LENGTH = 100.0
 # base station position
-BS_POS_X = 125.0
-BS_POS_Y = 125.0
+BS_POS_X = 50.0
+BS_POS_Y = 50.0
 # packet configs
 MSG_LENGTH = 4000 # bits
 HEADER_LENGTH = 150 # bits
 # initial energy at every node's battery
-INITIAL_ENERGY = 2 # Joules
+INITIAL_ENERGY = 0.5 # Joules
 
 
 ## Energy Configurations
@@ -106,12 +155,13 @@ FUZZY_M = 2
 
 
 ## Sleep Scheduling configurations:
-NB_INDIVIDUALS   = 20
+NB_INDIVIDUALS   = 50
 MAX_ITERATIONS = 100
 # ALPHA and BETA are the fitness function' weights
 # where ALPHA optimizes energy lifetime, BETA the coverage
-FITNESS_ALPHA  = 0.5
-FITNESS_BETA   = 0.5
+FITNESS_ALPHA  = 0.34
+FITNESS_BETA   = 0.33
+FITNESS_GAMMA  = 0.33
 WMAX = 0.6
 WMIN = 0.1
 
@@ -123,3 +173,4 @@ GRID_PRECISION = 1 # in meters
 INFINITY = float('inf')
 MINUS_INFINITY = float('-inf')
 
+RESULTS_PATH = './results/'

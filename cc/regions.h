@@ -26,12 +26,19 @@ class Regions {
             std::vector<region_t> _overlapping);
     ~Regions();
 
-    coverage_info_t GetCoverage(const std::vector<u_int> &ignore_nodes,
-                                const std::vector<u_int> &dead_nodes);
+    coverage_info_t GetCoverage(const std::vector<char> &individual,
+                                const std::vector<float> &energies);
+
+    void InitSession(const std::vector<float> &energies);
 
   private:
-    std::map<u_int, float> _exclusive;
-    std::vector<region_t> _overlapping; 
+    std::map<u_int, float> exclusive_;
+    std::vector<region_t> overlapping_; 
+
+    float total_coverage_exclusive_ = 0.0;
+    // session attributes
+    float total_coverage_    = 0.0;
+    float total_overlapping_ = 0.0;
 
 };
 #endif //REGIONS_H

@@ -17,6 +17,7 @@ Optimizer::Optimizer(dict_t exclusive, regions_t overlapping,
   // config.second are all floats
   fitness_alpha_  = config.second["FITNESS_ALPHA"];
   fitness_beta_   = config.second["FITNESS_BETA"];
+  fitness_gamma_  = config.second["FITNESS_GAMMA"];
   wmax_           = config.second["WMAX"];
   wmin_           = config.second["WMIN"];
   
@@ -35,15 +36,15 @@ Optimizer::~Optimizer() {
 }
 
 individual_t
-Optimizer::Run(vector<float> energies, u_int head_id) {
+Optimizer::Run(vector<float> energies) {
   ClearLearningTraces();
-  InitializeSessionData(energies, head_id);
+  InitializeSessionData(energies);
 
   // find all nodes that are susceptible to sleep (not dead neither ch)
   // depleted nodes and ch should cannot be taken into consideration
   vector<u_int> can_sleep;
   for(u_int idx = 0; idx < energies_.size(); idx++)
-    if (energies_[idx] != 0 && ids_[idx] != head_id_)
+    if (energies_[idx] != 0.0)
       can_sleep.push_back(idx);
 
   CreatePopulation();
@@ -58,7 +59,7 @@ Optimizer::CreatePopulation() {
   for (auto &individual: population_)
     for (u_int node_idx = 0; node_idx < nb_nodes_; node_idx++) {
       float random = distribution(generator_);
-      if ((ids_[node_idx] == head_id_) || (energies_[node_idx] == 0))
+      if ((energies_[node_idx] == 0))
         // cluster head cannot be put to sleep
         individual[node_idx] = 0;
       else
@@ -66,22 +67,11 @@ Optimizer::CreatePopulation() {
     } 
 }
 
-population_fitness_t
-Optimizer::CalculateFitness(vector<individual_t> &group) {
-  vector<fitness_t> group_fitness;
-  for (u_int idx = 0; idx < group.size(); idx++) {
-    auto const &individual = group[idx];
-    auto fitness_ret = Fitness(individual, 0);
-    group_fitness.push_back(fitness_ret);
-  }
-  return group_fitness;
-}
-
 void
 Optimizer::UpdateFitness() {
   for (u_int idx = 0; idx < nb_individuals_; idx++) {
     auto const &individual = population_[idx];
-    auto fitness_ret = Fitness(individual, 0);
+    auto fitness_ret = Fitness(individual);
     float individual_fitness = fitness_ret.total;
     if (individual_fitness > best_local_fitness_[idx]) {
       best_locals_[idx] = individual;
@@ -90,20 +80,6 @@ Optimizer::UpdateFitness() {
     if (individual_fitness > best_global_fitness_.total) {
       best_global_ = individual;
       best_global_fitness_ = fitness_ret;
-      auto coverage_info = fitness_ret.coverage_info;
-      if (coverage_info.partial_coverage == 0.0 &&
-          coverage_info.total_coverage   == 0.0)
-        best_coverage_ = 0.0;
-      else
-        best_coverage_    = coverage_info.partial_coverage/
-                            coverage_info.total_coverage;
-      
-      if (coverage_info.partial_overlapping == 0.0 &&
-          coverage_info.total_overlapping   == 0.0)
-        best_overlapping_ = 0.0;
-      else
-        best_overlapping_ = coverage_info.partial_overlapping/
-                            coverage_info.total_overlapping;
     }
   }
 }
@@ -111,74 +87,10 @@ Optimizer::UpdateFitness() {
 // default empty implementation
 void
 Optimizer::Optimize(const vector<u_int> &can_sleep) {
-  printf("Calling Optimizer::Optimize!");
 }
 
 fitness_t
-Optimizer::Fitness(const individual_t &individual, char do_print) {
-  vector<u_int> sleep_nodes;
-  float partial_energy = 0.0;
-  vector<u_int> dead_nodes;
-  u_int alive_nodes = 0;
-  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-    // push nodes that are dead
-    if (energies_[gene_idx] == 0 ) {
-      dead_nodes.push_back(ids_[gene_idx]);
-    } else if (individual[gene_idx] == 1) { // sleeping nodes
-      sleep_nodes.push_back(ids_[gene_idx]);
-      alive_nodes++;
-    } else {
-      partial_energy += energies_[gene_idx];
-      alive_nodes++;
-    }
-  }
-
-  // calculate sum(ei-avg(e)), sum(max(ei-avg(e),0)), sum(min(ei-avg(e),0))
-  float average_energy = (alive_nodes==0) ? 0.0 : total_energy_/alive_nodes;
-  float energies_dev = 0.0, neg_energy_dev = 0.0, pos_energy_dev = 0.0;
-  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-    float energy_dev = energies_[gene_idx] - average_energy;
-    if (energies_[gene_idx] > 0.0) { //skip dead nodes
-      if (individual[gene_idx] == 0) { //only for awake nodes
-        energies_dev += energy_dev;
-      }
-      // for all alive nodes
-      if (energy_dev < 0.0) {
-        neg_energy_dev += energy_dev;
-      } else {
-        pos_energy_dev += energy_dev;
-      }
-    }
-  }
-
-  auto coverage_info = regions_->GetCoverage(sleep_nodes, dead_nodes);
-
-  // TODO add try catch here
-  float term1;
-  if (pos_energy_dev-neg_energy_dev == 0.0) {
-    term1 = 0.0;
-  } else {
-    //term1 = FITNESS_ALPHA_*(1.0-partial_energy/total_energy_);
-    //printf("%f %f %f\n", energies__dev, neg_energy_dev, pos_energy_dev);
-    term1 = (energies_dev-neg_energy_dev)/(pos_energy_dev-neg_energy_dev);
-  }
-  float term2;
-  if (coverage_info.total_coverage == 0) {
-    term2 = 0.0;
-  } else { // gamma*(1- partial_overlapping/total_overlapping)
-    term2 = coverage_info.exclusive_area/coverage_info.total_coverage;
-  }
-
-  float fitness_val = fitness_alpha_*term1 + fitness_beta_*term2;
-  if (do_print == 1) {
-    printf("fitness %f, 1: %f, 2: %f\n", fitness_val, term1, term2);
-  }
-
-  fitness_t  fitness_ret = {.total = fitness_val,
-                                .term1 = term1,
-                                .term2 = term2,
-                                .coverage_info = coverage_info};
-  return fitness_ret;
+Optimizer::Fitness(const individual_t &individual) {
 }
 
 void
@@ -200,6 +112,11 @@ Optimizer::SetBeta(float value) {
   fitness_beta_ = value;
 }
 
+void
+Optimizer::SetGamma(float value) {
+  fitness_gamma_ = value;
+}
+
 vector<float>
 Optimizer::GetLearningTrace() {
   return learning_trace_;
@@ -217,12 +134,19 @@ Optimizer::GetTerm2Trace() {
 
 float
 Optimizer::GetBestCoverage() {
-  return best_coverage_;
+  auto coverage_info = best_global_fitness_.coverage_info;
+  if (coverage_info.total_coverage   != 0.0)
+    return coverage_info.partial_coverage/coverage_info.total_coverage;
+  return 0.0;
 }
 
 float
 Optimizer::GetBestOverlapping() {
-  return best_overlapping_;
+  auto coverage_info = best_global_fitness_.coverage_info;
+  if (coverage_info.total_overlapping != 0.0)
+    return coverage_info.partial_overlapping/
+           coverage_info.total_overlapping;
+  return 0.0;
 }
 
 void
@@ -233,13 +157,19 @@ Optimizer::ClearLearningTraces() {
 }
 
 void 
-Optimizer::InitializeSessionData(const float_v &energies, const u_int &head_id) {
+Optimizer::InitializeSessionData(const float_v &energies) {
   energies_ = energies;
-  head_id_ = head_id;
   total_energy_ = 0.0;
   best_global_fitness_.total = 0.0;
-  for (auto const &energy: energies_)
-    total_energy_ += energy;
+  nb_alive_nodes_ = 0;
+  for (u_int idx = 0; idx < nb_nodes_; idx++) {
+    total_energy_ += energies_[idx];
+    if (energies_[idx] == 0.0)
+      dead_nodes_.push_back(ids_[idx]);
+    else
+      nb_alive_nodes_++;
+  }
+  regions_->InitSession(energies_);
 }
 
 void

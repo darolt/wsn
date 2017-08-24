@@ -1,3 +1,4 @@
+import config as cf
 
 """Utility class used to store local traces."""
 class Tracer(dict):
@@ -9,9 +10,11 @@ class Tracer(dict):
 
     # lifetime/energy-related log
     self['alive_nodes']     = ('Number of alive nodes', rounds_label, [], 1, 0)
-    self['energies']        = ('Energy (J)'           , rounds_label, [], 1, 0)
+    if cf.TRACE_ENERGY:
+      self['energies']        = ('Energy (J)'           , rounds_label, [], 1, 0)
 
-    self['first_depletion'] = ('FirstDepletion'       , rounds_label, [], 0, 0)
+    self['first_depletion'] = ('First depletion'       , rounds_label, [], 0, 0)
+    self['30per_depletion'] = ('30 percent depletion'  , rounds_label, [], 0, 0)
 
     # coverage-related log
     self['coverage']        = ('Coverate rate'        , rounds_label, [], 0, 1)

@@ -21,14 +21,9 @@ class RegionsConverter(list):
     logging.info('Creating Regions instance.')
     self.extend(grid._exclusive_regions)
     self._grid2regions(grid._pixels)
-    self._remove_small_regions()
+    #self._remove_small_regions()
     self._extract_exclusive_regions()
     logging.info(self)
-
-    self.initial_coverage = self._get_total_coverage()
-    init = self.get_both()
-    self.initial_coverage    = init[0]
-    self.initial_overlapping = init[1]
 
   def _grid2regions(self, pixels):
     """Convert a grid to regions."""
@@ -47,7 +42,7 @@ class RegionsConverter(list):
 
   def _extract_exclusive_regions(self):
     """Separate regions that overlap from regions that have a single
-    owner. This improves performance of get_both method.
+    owner. This aims to improve performance.
     """
     logging.info('extracting exclusive regions.')
     self._exclusive_regions = {}
@@ -89,11 +84,15 @@ class RegionsConverter(list):
 
   def __str__(self):
     """Print all regions."""
+    sum = 0.0
     regions_str = ''
     for owner, area in self._exclusive_regions.iteritems():
       regions_str += "%s, %f \n" %(str(owner), area)
+      sum += area
     for region in self:
       regions_str += "%s, %f \n" %(str(region.owners), region.area)
+      sum += region.area
+    regions_str += "total area: %f\n" %(sum)
     return regions_str
 
   def _get_total_coverage(self):
@@ -107,29 +106,17 @@ class RegionsConverter(list):
 
     return coverage
 
-  def get_both(self, ignore_nodes=[]):
-    """Get both network coverage and overlapping areas."""
-    coverage = self.initial_coverage
-    overlapping = 0.0
-    
-    for node in ignore_nodes:
-      if node.id in self._exclusive_regions:
-        coverage -= self._exclusive_regions[node.id]
-      
-    s = set(ignore_nodes)
+  def _check(self, exclusive, overlapping):
+    for owner, area in exclusive.iteritems():
+      assert area >= 0.0, "Negative region found!"
     for region in self:
-      res = len(region.owners - s)
-      if res == 0:
-        coverage -= region.area
-      elif res > 1:
-          overlapping += region.area
-
-    #print("cov %f, overlap %f" %(coverage, overlapping))
-    return coverage, overlapping
+      assert region.area >= 0.0, "Negative region found!"
 
   def convert(self):
     overlapping_regions = []
     for region in self:
       overlapping_regions.append((list(region.owners), region.area))    
+
+    self._check(self._exclusive_regions, overlapping_regions)
     return self._exclusive_regions, overlapping_regions
 

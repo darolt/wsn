@@ -41,9 +41,9 @@ class MTE(RoutingProtocol):
     done = []
     while len(alive_nodes) != 0:
       starting_node = alive_nodes[0]
-      shortest_path = shortestPath(G, starting_node.id, BSID)
+      shortest_path = shortestPath(G, starting_node.id, cf.BSID)
       for i, id in enumerate(shortest_path):
-        if id == BSID or id in done:
+        if id == cf.BSID or id in done:
           break
         network.get_node(id).next_hop = shortest_path[i+1]
         #network[id].next_hop = shortest_path[i+1]

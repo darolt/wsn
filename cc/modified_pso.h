@@ -28,5 +28,7 @@ class ModifiedPso: public Optimizer {
     void Crossover(individual_t &individual1, individual_t &individual2);
 
     void Optimize(const std::vector<u_int> &can_sleep);
+
+    fitness_t Fitness(const individual_t &individual);
 };
 #endif //MODIFIED_PSO_H

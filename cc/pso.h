@@ -21,5 +21,6 @@ class Pso: public Optimizer {
     std::vector<float_v> velocity_;
   
     void Optimize(const std::vector<u_int> &can_sleep);
+    fitness_t Fitness(const individual_t &individual);
 };
 #endif //PSO_H

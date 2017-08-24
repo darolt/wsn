@@ -15,17 +15,16 @@ Ecca::~Ecca() {
 // public methods
 
 individual_t
-Ecca::Run(std::vector<float> energies, unsigned int head_id) {
+Ecca::Run(std::vector<float> energies) {
   ClearLearningTraces();
-  InitializeSessionData(energies, head_id);
+  InitializeSessionData(energies);
 
   // find all nodes that are susceptible to sleep (not dead neither ch)
   // depleted nodes and ch should cannot be taken into consideration
   std::vector<unsigned int> can_sleep;
   for(unsigned int idx = 0; idx < energies.size(); idx++)
-    if (energies[idx] != 0 && ids_[idx] != head_id)
+    if (energies[idx] != 0)
       can_sleep.push_back(idx);
-
 
   // reset best global and best locals
   Individual::SetNewRun();
@@ -138,10 +137,6 @@ Ecca::FastNonDominatedSort(std::vector<Individual> &population) {
 
 bool
 Ecca::Dominates(Individual &individual1, Individual &individual2) {
-  ////printf("i11 : %f\n", individual1.GetFitness().term1);
-  ////printf("i12 : %f\n", individual1.GetFitness().term2);
-  ////printf("i21 : %f\n", individual2.GetFitness().term1);
-  ////printf("i22 : %f\n", individual2.GetFitness().term2);
   if (fitness_alpha_ != 0.0 && fitness_beta_ != 0.0) {
     if ((individual1.GetFitness().term1 > individual2.GetFitness().term1) &&
         (individual1.GetFitness().term2 > individual2.GetFitness().term2))
@@ -237,7 +232,6 @@ Ecca::CalculateCrowdingDistance(std::vector<Individual> &group) {
     }  
   }
 }
-
 
 void
 Ecca::CrowdedSorting(std::vector<Individual> &group) {

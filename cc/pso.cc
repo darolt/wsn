@@ -1,4 +1,5 @@
 #include "pso.h"
+#include <stdio.h>
 
 using namespace std;
 
@@ -30,7 +31,6 @@ Pso::Optimize(const vector<u_int> &can_sleep) {
     for (u_int individual_idx = 0; individual_idx < nb_individuals_; individual_idx++) {
       individual_t &individual = population_[individual_idx];
       
-      //for(u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
       for(auto const &gene_idx: can_sleep) {
         float r1 = distribution(generator_);
         float r2 = distribution(generator_);
@@ -51,5 +51,44 @@ Pso::Optimize(const vector<u_int> &can_sleep) {
     UpdateFitness();
 
   }
+}
+
+fitness_t
+Pso::Fitness(const individual_t &individual) {
+  float partial_energy = 0.0;
+  vector<u_int> sleep_nodes;
+  u_int nb_active_nodes = 0;
+  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
+    if (energies_[gene_idx] != 0.0) {
+      if (individual[gene_idx] == 1) // sleeping node
+        sleep_nodes.push_back(ids_[gene_idx]);
+      else {// active node
+        partial_energy += energies_[gene_idx];
+        nb_active_nodes++;
+      }
+    }
+  }
+
+  auto coverage_info = regions_->GetCoverage(individual, energies_);
+
+  float term1 = 0.0, term2 = 0.0, term3 = 0.0;
+  if (total_energy_ != 0.0)
+    term1 = partial_energy/total_energy_;
+
+  if (coverage_info.total_coverage != 0.0)
+    term2 = coverage_info.partial_coverage/coverage_info.total_coverage;
+
+  if (nb_alive_nodes_ != 0)
+    term3 = 1 - nb_active_nodes/float(nb_alive_nodes_);
+
+  float fitness_val = fitness_alpha_*term1 +
+                      fitness_beta_*term2  +
+                      fitness_gamma_*term3;
+
+  fitness_t  fitness_ret = {.total = fitness_val,
+                            .term1 = term1,
+                            .term2 = term2,
+                            .coverage_info = coverage_info};
+  return fitness_ret;
 }
 

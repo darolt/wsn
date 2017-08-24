@@ -17,7 +17,8 @@ network. Finally, a round is executed.
 """
 class FCM(RoutingProtocol):
 
-  def _initial_setup(self, network):
+  #def _initial_setup(self, network):
+  def _setup_phase(self, network):
     """The base station uses Fuzzy C-Means to clusterize the network. The
     optimal number of clusters is calculated. Then FCM is used to select
     the heads (centroids) for each cluster (only in the initial round).
@@ -46,12 +47,15 @@ class FCM(RoutingProtocol):
                                                    cf.FUZZY_M, error=0.005,
                                                    maxiter=1000, 
                                                    init=None)[0:2]
-    # assign nearest node to centroid as cluster head
-    tmp_centroid = Node(0)
+    # assign node nearest to centroid as cluster head
     heads = []
+    # also annotates centroids to network
+    network.centroids = []
     for cluster_id, centroid in enumerate(centroids):
+      tmp_centroid = Node(0)
       tmp_centroid.pos_x = centroid[0]
       tmp_centroid.pos_y = centroid[1]
+      network.centroids.append(tmp_centroid)
       nearest_node = None
       shortest_distance = cf.INFINITY
       for node in network[0:-1]:
@@ -71,11 +75,11 @@ class FCM(RoutingProtocol):
       node.membership = cluster_id
       head = [x for x in heads if x.membership == cluster_id][0]
       node.next_hop   = head.id
+
+    self.head_rotation(network)
   
-    # uncomment next line if you want to see the cluster assignment
-    #plot_clusters(network)
-  
-  def _setup_phase(self, network):
+  #def _setup_phase(self, network):
+  def head_rotation(self, network):
     logging.debug('FCM: head rotation')
     # head rotation
     # current cluster heads choose next cluster head with the most

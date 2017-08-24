@@ -10,7 +10,6 @@ from matplotlib.mlab import griddata
 import config as cf
 from python.network.network import *
 
-RESULTS_PATH = './results/'
 
 plt.rcParams.update({'font.size': 14})
 
@@ -49,10 +48,26 @@ def plot_curves(curves):
     plt.plot(X, curve, colors[color_idx], label=scenario)
     color_idx += 1
 
+def save2csv_raw(traces):
+  to_csv = []
+  dir_path = cf.RESULTS_PATH + time.strftime("%Y-%m-%d_%H:%M:%S") + '/'
+  os.makedirs(dir_path)
+  for scenario_name, tracer in traces.iteritems():
+    for i, val in enumerate(tracer['coverage'][2]):
+      tmp = {'cov' : val,
+             'sleep' : tracer['nb_sleeping'][2][i]}
+      to_csv.append(tmp)
+
+    df = pd.DataFrame(to_csv)
+    df.to_csv(dir_path + scenario_name + '-cov_vs_sleeping.csv')
+
+
 def print_coverage_info(traces):
   for scenario_name, tracer in traces.iteritems():
     args = (scenario_name, tracer['first_depletion'][2][0])
     print("%s: first depletion at %d" % args)
+    args = (scenario_name, tracer['30per_depletion'][2][0])
+    print("%s: 30 percent depletion at %d" % args)
     for trace_name, trace in tracer.iteritems():
       if not trace[4]:
         continue
@@ -66,25 +81,21 @@ def save2csv(traces):
   to_csv = []
   for scenario_name, tracer in traces.iteritems():
     tmp = {'scenario_name': scenario_name,
-           'first_depletion': tracer['first_depletion'][2][0]}
-    args = (scenario_name, tracer['first_depletion'][2][0])
-    print("%s: first depletion at %d" % args)
+           'first_depletion': tracer['first_depletion'][2][0],
+           '30per_depletion': tracer['30per_depletion'][2][0]}
     for trace_name, trace in tracer.iteritems():
       if not trace[4]:
         continue
       values = np.array(trace[2])
       mean   = np.nanmean(values)
       stdev  = np.nanstd(values)
-      args   = (scenario_name, trace_name, mean, stdev)
-      print("%s: %s avg (std): %f (%f)" % args)
-
       tmp[trace_name+ ' (mean)']  = mean
       tmp[trace_name+ ' (stdev)'] = stdev
 
     to_csv.append(tmp)
 
   df = pd.DataFrame(to_csv)
-  dir_path = cf.RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
+  dir_path = cf.RESULTS_PATH + time.strftime("%Y-%m-%d_%H:%M:%S") + '/'
   os.makedirs(dir_path)
   df.to_csv(dir_path + 'results_summary.csv')
 
@@ -111,11 +122,14 @@ def plot_traces(traces):
       plt.plot(X, trace[2], color_n_line, label=scenario)
       plt.xlabel(trace[1])
       plt.ylabel(trace[0])
-      plt.legend()
+      plt.legend(fontsize=11)
       subplot_idx += 1
     color_idx = (color_idx+1)%len(colors)
     line_idx  = (line_idx+1)%len(line_style)
-      
+
+  plt.xlim(xmin=0)
+  plt.ylim(ymin=0)
+  plt.grid(b=True, which='major', color='0.6', linestyle='--')
   plt.show()
 
 def plot_nodes_plane(nodes):
@@ -136,7 +150,7 @@ def plot_clusters(network):
   # print clusters
   plt.figure()
   for cluster_id in range(0, cf.NB_CLUSTERS):
-    cluster = network.get_nodes_by_membership(cluster_id)
+    cluster = network.get_nodes_by_membership(cluster_id, only_alives=0)
     X = [node.pos_x for node in cluster if not node.is_head()]
     Y = [node.pos_y for node in cluster if not node.is_head()]
     color_ref = float(cluster_id)/cf.NB_CLUSTERS*0.6
@@ -156,13 +170,20 @@ def plot_clusters(network):
     Y = [node.pos_y for node in network[0:-1]]
     Z = [1 if node.membership==cluster_id else 0 for node in network[0:-1]]
     X, Y, Z = grid(X, Y, Z)
-    plt.contour(X, Y, Z, 1, colors='0.5')
+    plt.contour(X, Y, Z, 1, colors='0.6')
 
-  # print heads
-  heads = network.get_heads()
+  # print centroids
+  #heads = network.get_heads(only_alives=0)
+  heads = [x for x in network.centroids]
   X = [node.pos_x for node in heads]
   Y = [node.pos_y for node in heads]
   plt.scatter(X, Y, color='r', marker='^', s=80)
+
+  # print BS
+  X = [network.get_BS().pos_x]
+  Y = [network.get_BS().pos_y]
+  plt.scatter(X, Y, color='r', marker='x', s=80)
+
   plt.xlim(xmin=0)
   plt.ylim(ymin=0)
   plt.xlim(xmax=cf.AREA_WIDTH)
@@ -178,12 +199,38 @@ def plot_time_of_death(network):
   X, Y, Z = grid(x, y, z)
   c = plt.contourf(X, Y, Z)
   cbar = plt.colorbar(c)
-  cbar.ax.set_ylabel('number of rounds until death')
+  cbar.ax.set_ylabel('number of rounds until full depletion')
+
+  # print centroids
+  #heads = network.get_heads(only_alives=0)
+  heads = [x for x in network.centroids]
+  X = [node.pos_x for node in heads]
+  Y = [node.pos_y for node in heads]
+  plt.scatter(X, Y, color='r', marker='^', s=80)
+
+  # print BS
+  X = [network.get_BS().pos_x]
+  Y = [network.get_BS().pos_y]
+  plt.scatter(X, Y, color='r', marker='x', s=80)
+
+  # plot nodes
+  for cluster_id in range(0, cf.NB_CLUSTERS):
+    cluster = network.get_nodes_by_membership(cluster_id, only_alives=0)
+    X = [node.pos_x for node in cluster if not node.is_head()]
+    Y = [node.pos_y for node in cluster if not node.is_head()]
+    color_ref = float(cluster_id)/cf.NB_CLUSTERS*0.6
+    plt.scatter(X, Y, color='0.6')
+
+  plt.xlim(xmin=0)
+  plt.ylim(ymin=0)
+  plt.xlim(xmax=cf.AREA_WIDTH)
+  plt.ylim(ymax=cf.AREA_LENGTH)
+
   plt.show()
 
 def log_curves(curves):
   """Write results."""
-  dir_path = cf.RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
+  dir_path = cf.RESULTS_PATH + time.strftime("%Y-%m-%d_%H:%M:%S") + '/'
   os.makedirs(dir_path)
   
   # write alive_nodes vs round number
@@ -193,7 +240,7 @@ def log_curves(curves):
   # write nodes position and time of death
 
 def log_coverages(pso_wrapper):
-  dir_path = cf.RESULTS_PATH + time.strftime("%H:%M:%S_%d-%m-%Y") + '/'
+  dir_path = cf.RESULTS_PATH + time.strftime("%Y-%m-%d_%H:%M:%S") + '/'
   os.makedirs(dir_path)
   df = pd.DataFrame.from_dict(pso_wrapper._cov_log)
   df.to_csv(dir_path + 'cov_log.txt')
