@@ -47,6 +47,7 @@ def plot_curves(curves):
     X = range(0, len(curve))
     plt.plot(X, curve, colors[color_idx], label=scenario)
     color_idx += 1
+  plt.show()
 
 def save2csv_raw(traces):
   to_csv = []
@@ -60,7 +61,6 @@ def save2csv_raw(traces):
 
     df = pd.DataFrame(to_csv)
     df.to_csv(dir_path + scenario_name + '-cov_vs_sleeping.csv')
-
 
 def print_coverage_info(traces):
   for scenario_name, tracer in traces.iteritems():
@@ -98,7 +98,6 @@ def save2csv(traces):
   dir_path = cf.RESULTS_PATH + time.strftime("%Y-%m-%d_%H:%M:%S") + '/'
   os.makedirs(dir_path)
   df.to_csv(dir_path + 'results_summary.csv')
-
 
 def plot_traces(traces):
   first_tracer = traces.itervalues().next()

@@ -7,14 +7,7 @@
 #include <map>
 #include <utility>
 #include <vector>
-
-typedef struct {
-  float partial_coverage;
-  float total_coverage;
-  float partial_overlapping;
-  float total_overlapping;
-  float exclusive_area;
-} coverage_info_t;
+#include "types.h"
 
 typedef unsigned int u_int;
 typedef std::pair<std::vector<u_int>,

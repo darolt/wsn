@@ -32,13 +32,14 @@ NOTIFY_POSITION = 0
 # for convenience, the scenarios list also accepts commands that are
 # executed in run.py
 
-scenario0 = ('DC',    None,         'zero',   None)
-scenario1 = ('LEACH', None,         'zero',   None)
-scenario2 = ('MTE',   None,         'total',  None)
-scenario3 = ('FCM',   None,         'zero',   None)
-scenario4 = ('FCM',  'ModifiedPso', 'zero',   'FCMMPSO')
-scenario5 = ('FCM',  'Pso',         'zero',   None)
-scenario6 = ('FCM',  'Ecca',        'zero',   None)
+scenario0 = ('DC',    None,              'zero',  None)
+scenario1 = ('LEACH', None,              'zero',  None)
+scenario2 = ('MTE',   None,              'total', None)
+scenario3 = ('FCM',   None,              'zero',  None)
+scenario4 = ('FCM',  'ModifiedPso',      'zero',  'FCMMPSO')
+scenario5 = ('FCM',  'Pso',              'zero',  None)
+scenario6 = ('FCM',  'Ecca',             'zero',  None)
+scenario7 = ('FCM',  'GeneticAlgorithm', 'zero',  None)
 # list with all scenarios to simulate
 
 # example of configuration to get first part of results
@@ -65,16 +66,19 @@ scenario6 = ('FCM',  'Ecca',        'zero',   None)
 #            ]
 
 scenarios = [
+              scenario3,
               "cf.FITNESS_ALPHA=0.40",
               "cf.FITNESS_BETA=0.60",
               "cf.FITNESS_GAMMA=0.0",
+              scenario7,
               scenario4,
-              #"cf.FITNESS_ALPHA=0.30",
-              #"cf.FITNESS_BETA=0.15",
-              #"cf.FITNESS_GAMMA=0.55",
-              #scenario5,
-              #scenario6,
+              "cf.FITNESS_ALPHA=0.30",
+              "cf.FITNESS_BETA=0.15",
+              "cf.FITNESS_GAMMA=0.55",
+              scenario5,
+              scenario6,
               "save2csv_raw(traces)",
+              "plot_traces(traces)",
             ]
 
 #scenarios = [
@@ -155,8 +159,8 @@ FUZZY_M = 2
 
 
 ## Sleep Scheduling configurations:
-NB_INDIVIDUALS   = 50
-MAX_ITERATIONS = 100
+NB_INDIVIDUALS = 50
+MAX_ITERATIONS = 50
 # ALPHA and BETA are the fitness function' weights
 # where ALPHA optimizes energy lifetime, BETA the coverage
 FITNESS_ALPHA  = 0.34

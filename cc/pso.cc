@@ -20,56 +20,53 @@ Pso::Optimize(const vector<u_int> &can_sleep) {
   velocity_ = vector<float_v>(nb_individuals_, float_v(nb_nodes_, 0.0));
 
   for (u_int individual_idx = 0; individual_idx < nb_individuals_; individual_idx++) {
-    for(u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-      velocity_[individual_idx][gene_idx] = distribution2(generator_);
+    for(u_int idx = 0; idx < nb_nodes_; idx++) {
+      velocity_[individual_idx][idx] = distribution2(generator_);
     }
   }
 
   float acceleration = 1.0, phi1 = 2.0, phi2 = 2.0;
   for (u_int it = 0; it < max_iterations_; it++) {
-    PushIntoLearningTraces(best_global_fitness_);
+    PushIntoLearningTraces(best_global_.GetFitness());
     for (u_int individual_idx = 0; individual_idx < nb_individuals_; individual_idx++) {
-      individual_t &individual = population_[individual_idx];
+      Individual &individual = population_[individual_idx];
+      Individual &best_local = best_locals_[individual_idx];
+      auto genes = individual.GetGenes();
       
-      for(auto const &gene_idx: can_sleep) {
+      for(auto const &idx: can_sleep) {
         float r1 = distribution(generator_);
         float r2 = distribution(generator_);
         float r3 = distribution(generator_);
 
-        int diff_to_global = best_global_[gene_idx] - individual[gene_idx];
-        int diff_to_local  = best_locals_[individual_idx][gene_idx] - individual[gene_idx];
-        velocity_[individual_idx][gene_idx] = acceleration*velocity_[individual_idx][gene_idx] +
-                                              phi1*r1*diff_to_global + 
-                                              phi2*r2*diff_to_local;
+        int diff_to_global = best_global_.GetGenes()[idx] - genes[idx];
+        int diff_to_local  = best_local.GetGenes()[idx] - genes[idx];
+        velocity_[individual_idx][idx] = acceleration*velocity_[individual_idx][idx] +
+                                         phi1*r1*diff_to_global + 
+                                         phi2*r2*diff_to_local;
 
-        float velocity_norm = 1 / (1 + exp(-velocity_[individual_idx][gene_idx]));
+        float velocity_norm = 1 / (1 + exp(-velocity_[individual_idx][idx]));
         
-        individual[gene_idx] = (r3 < velocity_norm) ? 1 : 0;
+        genes[idx] = (r3 < velocity_norm) ? 1 : 0;
       }
+      individual.SetGenes(genes);
+      if (individual.GetFitness().total > best_local.GetFitness().total)
+        best_local = individual;
     }
-
-    UpdateFitness();
-
   }
 }
 
 fitness_t
-Pso::Fitness(const individual_t &individual) {
+Pso::Fitness(Individual &individual) {
   float partial_energy = 0.0;
-  vector<u_int> sleep_nodes;
   u_int nb_active_nodes = 0;
-  for (u_int gene_idx = 0; gene_idx < nb_nodes_; gene_idx++) {
-    if (energies_[gene_idx] != 0.0) {
-      if (individual[gene_idx] == 1) // sleeping node
-        sleep_nodes.push_back(ids_[gene_idx]);
-      else {// active node
-        partial_energy += energies_[gene_idx];
-        nb_active_nodes++;
-      }
+  auto genes = individual.GetGenes();
+  for (u_int idx = 0; idx < nb_nodes_; idx++)
+    if (genes[idx] == 0 && energies_[idx] != 0.0) { // active nodes
+      partial_energy += energies_[idx];
+      nb_active_nodes++;
     }
-  }
 
-  auto coverage_info = regions_->GetCoverage(individual, energies_);
+  auto coverage_info = regions_->GetCoverage(genes, energies_);
 
   float term1 = 0.0, term2 = 0.0, term3 = 0.0;
   if (total_energy_ != 0.0)
@@ -89,6 +86,16 @@ Pso::Fitness(const individual_t &individual) {
                             .term1 = term1,
                             .term2 = term2,
                             .coverage_info = coverage_info};
+
+  // update if best fitness was improved
+  //if (initial || fitness_.total > individual.best_fitness_.total)
+  //  individual.best_fitness_ = fitness_;
+
+  if (fitness_ret.total > best_global_.GetFitness().total)
+    best_global_ = individual;
+
+  individual.SetFitness(fitness_ret);
+
   return fitness_ret;
 }
 

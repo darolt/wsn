@@ -21,12 +21,9 @@ class Ecca: public Optimizer {
     // configuration
     individual_t Run(std::vector<float> energies);
 
-    float GetBestCoverage();
-    float GetBestOverlapping();
-
   private:
     
-    std::vector<Individual> CreatePopulation1();
+    //std::vector<Individual> CreatePopulation1();
 
     std::vector<std::vector<Individual>>  
     FastNonDominatedSort(std::vector<Individual> &population);
@@ -40,11 +37,10 @@ class Ecca: public Optimizer {
     std::vector<Individual>
     FindBestParents(std::vector<std::vector<Individual>> &fronts);
 
-    void
-    CalculateCrowdingDistance(std::vector<Individual> &group);
+    void CalculateCrowdingDistance(std::vector<Individual> &group);
 
-    void
-    CrowdedSorting(std::vector<Individual> &group);
+    void CrowdedSorting(std::vector<Individual> &group);
 
+    fitness_t Fitness(Individual &individual);
 };
 #endif //ECCA_H

@@ -9,7 +9,9 @@
 #include <utility>
 #include <vector>
 #include <random>
+#include "types.h"
 #include "regions.h"
+#include "individual.h"
 
 // most of these definitions are used to improve readability
 typedef unsigned int u_int;
@@ -25,13 +27,6 @@ typedef std::vector<char> individual_t;
 typedef std::pair<std::map<std::string, u_int>, 
                   std::map<std::string, float>> config_t;
 
-typedef struct {
-  float total;
-  float term1;
-  float term2;
-  coverage_info_t coverage_info;
-} fitness_t;
-typedef std::vector<fitness_t> population_fitness_t;
 
 class Optimizer {
 
@@ -62,10 +57,6 @@ class Optimizer {
   protected:
     Regions *regions_;
 
-    // Returns a float indicating how fit a individual/particle is,
-    // and the coverage and overlapping areas for that particle.
-    virtual fitness_t Fitness(const individual_t &individual);
-
     // attributes
     std::vector<u_int> ids_;
     u_int nb_nodes_;
@@ -81,17 +72,9 @@ class Optimizer {
     // session attributes (stored here for convenience)
 
     // std::vector with all individuals
-    std::vector<individual_t> population_;
-    // each index contains the best individuals found in that index
-    // (it supposes that the number of individuals is constant)
-    std::vector<individual_t> best_locals_;
-    // best individual found
-    individual_t best_global_;
-    // std::vector with the fitness of the best individual found
-    // (used for optimization)
-    std::vector<float> best_local_fitness_;
-    // fitness of the best individual in the history
-    fitness_t best_global_fitness_;
+    std::vector<Individual> population_;
+    Individual best_global_;
+    std::vector<Individual> best_locals_;
 
     // random related
     std::default_random_engine generator_;
@@ -105,23 +88,20 @@ class Optimizer {
     std::vector<float> learning_trace_;
     std::vector<float> term1_trace_;
     std::vector<float> term2_trace_;
-    // coverage and overlapping for the best configuration found in the
-    // last run. These are not necessarily the best coverages found.
-    float best_coverage_;
-    float best_overlapping_;
-
 
     // methods
     void PrintIndividual(individual_t individual);
 
-    virtual void CreatePopulation();
+    void CreatePopulation();
     virtual void Optimize(const std::vector<u_int> &can_sleep);
-
-    void UpdateFitness();
 
     void ClearLearningTraces();
     void InitializeSessionData(const float_v &energies);
 
     void PushIntoLearningTraces(const fitness_t &fitness);
+
+    // Returns a float indicating how fit a individual/particle is,
+    // and the coverage and overlapping areas for that particle.
+    virtual fitness_t Fitness(Individual &individual) = 0;
 };
 #endif //OPTIMIZER_H

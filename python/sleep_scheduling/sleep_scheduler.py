@@ -5,6 +5,7 @@ from time import time
 import config as cf
 from python.utils.grid import *
 from python.utils.regions_converter import *
+from python.utils.utils import *
 from cc.genetic_algorithm import *
 from cc.pso import *
 from cc.modified_pso import *
@@ -71,7 +72,7 @@ class SleepScheduler(object):
     #print("best cov: %f, best over: %f" %(best_coverage, best_overlapping))
     #print("init: %f, final: %f" %(learning_trace[0], learning_trace[-1]))
     #print(sum(ord(x) for x in best_configuration))
-
+    
     #logging.info('search finished.')
     #print(self._best_configuration)
     # actually put nodes to sleep

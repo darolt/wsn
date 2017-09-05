@@ -9,6 +9,7 @@
 #include <vector>
 #include <random>
 #include "optimizer.h"
+#include "individual.h"
 
 class ModifiedPso: public Optimizer {
   public:
@@ -21,14 +22,14 @@ class ModifiedPso: public Optimizer {
     // Mutate and Crossover functions modify the first argument since it is a
     // reference. This is not the best practice but it is done for performance
     // reasons.
-    void Mutate(individual_t &individual, std::vector<u_int> can_sleep, 
+    void Mutate(Individual &individual, std::vector<u_int> can_sleep, 
                   float mutation_rate);
     // Returns an individual that gets statistically half of its genes
     // from individual1 and half from individual2
-    void Crossover(individual_t &individual1, individual_t &individual2);
+    void Crossover(Individual &individual1, Individual &individual2);
 
     void Optimize(const std::vector<u_int> &can_sleep);
 
-    fitness_t Fitness(const individual_t &individual);
+    fitness_t Fitness(Individual &individual);
 };
 #endif //MODIFIED_PSO_H

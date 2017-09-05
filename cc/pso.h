@@ -9,6 +9,7 @@
 #include <vector>
 #include <random>
 #include "optimizer.h"
+#include "individual.h"
 
 class Pso: public Optimizer {
   public:
@@ -21,6 +22,6 @@ class Pso: public Optimizer {
     std::vector<float_v> velocity_;
   
     void Optimize(const std::vector<u_int> &can_sleep);
-    fitness_t Fitness(const individual_t &individual);
+    fitness_t Fitness(Individual &individual);
 };
 #endif //PSO_H
