@@ -113,10 +113,11 @@ class Node(object):
   def _aggregate(self, msg_length):
     logging.debug("node %d aggregating." % (self.id))
     # number of bits to be sent increase while forwarding messages
-    self.tx_queue_size += self.aggregation_function(msg_length)
+    aggregation_cost = self.aggregation_function(msg_length)
+    self.tx_queue_size += aggregation_cost
 
     # energy model for aggregation
-    energy = cf.E_DA * msg_length
+    energy = cf.E_DA * aggregation_cost
     self.energy_source.consume(energy)
 
   @_only_active_nodes

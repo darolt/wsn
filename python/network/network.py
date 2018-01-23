@@ -36,6 +36,9 @@ class Network(list):
     self.sleep_scheduler_class = None
 
     self.initial_energy = self.get_remaining_energy()
+    self.first_depletion = 0
+    self.per30_depletion = 0
+    self.energy_spent = []
 
   def reset(self):
     """Set nodes to initial state so the same placement of nodes can be
@@ -45,11 +48,20 @@ class Network(list):
       node.energy_source.recharge()
       node.reactivate()
 
+    # allows for updates of BS position between simulations
+    self[-1].pos_x = cf.BS_POS_X
+    self[-1].pos_y = cf.BS_POS_Y
+
     self.round = 0
     self.centroids = []
+    self.energy_spent = []
 
     self.routing_protocol = None
     self.sleep_scheduler_class = None
+
+    self.first_depletion = 0
+    self.per30_depletion = 0
+    self.perform_two_level_comm = 1
 
   def simulate(self):
     tracer = Tracer()
@@ -107,9 +119,12 @@ class Network(list):
     information is forwarded through the intermediary nodes to the base
     station.
     """
+    before_energy = self.get_remaining_energy()
     for i in range(0, cf.MAX_TX_PER_ROUND):
       self._sensing_phase()
       self._communication_phase()
+    after_energy = self.get_remaining_energy()
+    self.energy_spent.append(before_energy - after_energy)
 
   def _sensing_phase(self):
     """Every alive node captures information using its sensor."""
@@ -128,7 +143,7 @@ class Network(list):
     #logging.debug("Hierarchical communication: %s" % (msg))
 
     alive_nodes = self.get_alive_nodes()
-    if self.perform_two_level_comm:
+    if self.perform_two_level_comm == 1:
       self._two_level_comm(alive_nodes)
     else:
       self._recursive_comm(alive_nodes)
@@ -189,6 +204,9 @@ class Network(list):
   def get_sensor_nodes(self):
     """Return all nodes except base station."""
     return [node for node in self[0:-1]]
+
+  def get_average_energy(self):
+    return np.average(self.energy_spent)
 
   def someone_alive(self):
     """Finds if there is at least one node alive. It excludes the base station,

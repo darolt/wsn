@@ -73,13 +73,14 @@ class SleepScheduler(object):
     #print("init: %f, final: %f" %(learning_trace[0], learning_trace[-1]))
     #print(sum(ord(x) for x in best_configuration))
     
+    #plot_curves({'scenario': learning_trace})
     #logging.info('search finished.')
     #print(self._best_configuration)
     # actually put nodes to sleep
     nb_alive = len(self._cluster.get_alive_nodes())
     nb_sleeping = sum(ord(y) for x, y in zip(self._cluster, best_configuration) if x.alive)
     sleeping_rate = float(nb_sleeping)/float(nb_alive)
-    print("coverage %f, active rate %f" %(best_coverage, 1-sleeping_rate))
+    #print("coverage %f, active rate %f" %(best_coverage, 1-sleeping_rate))
     log = {}
     log['coverage']        = best_coverage
     log['overlapping']     = best_overlapping

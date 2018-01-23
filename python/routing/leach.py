@@ -7,7 +7,7 @@ from python.routing.routing_protocol import *
 class LEACH(RoutingProtocol):
 
   def setup_phase(self, network, round_nb=None):
-    """The base station decides which network are cluster heads in this
+    """The base station decides which nodes are cluster heads in this
     round, depending on a probability. Then it broadcasts this information
     to all network.
     Reference:
@@ -21,7 +21,7 @@ class LEACH(RoutingProtocol):
     prob_ch = float(cf.NB_CLUSTERS)/float(cf.NB_NODES)
     heads = []
     alive_nodes = network.get_alive_nodes()
-    logging.info('LEACH: deciding which network are cluster heads.')
+    logging.info('LEACH: deciding which nodes are cluster heads.')
     idx = 0
     while len(heads) != cf.NB_CLUSTERS:
       node = alive_nodes[idx]
@@ -34,7 +34,7 @@ class LEACH(RoutingProtocol):
       idx = idx+1 if idx < len(alive_nodes)-1 else 0
   
     # ordinary network choose nearest cluster heads
-    logging.info('LEACH: ordinary network choose nearest nearest cluster head')
+    logging.info('LEACH: ordinary nodes choose nearest nearest cluster head')
     for node in alive_nodes:
       if node in heads: # node is cluster head
         continue

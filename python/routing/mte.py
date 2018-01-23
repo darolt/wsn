@@ -60,6 +60,7 @@ class MTE(RoutingProtocol):
       network.broadcast_next_hop()
 
   def _initial_setup(self, network):
+    network.perform_two_level_comm = 0
     self._find_shortest_path(network)
     network.broadcast_next_hop()
   

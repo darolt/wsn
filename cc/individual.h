@@ -18,7 +18,7 @@ class Individual {
                Optimizer *container_handler);
     ~Individual();
 
-    fitness_t GetFitness();
+    fitness_t GetFitness() const;
     void SetFitness(fitness_t value);
     std::vector<char> GetGenes();
     void SetGenes(std::vector<char> value);

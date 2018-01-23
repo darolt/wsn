@@ -239,12 +239,11 @@ Ecca::Fitness(Individual &individual) {
                            .term2 = term2,
                            .coverage_info = coverage_info};
 
+  individual.SetFitness(fitness_ret);
+
   if (fitness_ret.total > best_global_.GetFitness().total)
     best_global_ = individual;
 
-  individual.SetFitness(fitness_ret);
-
   return fitness_ret;
-
 }
 

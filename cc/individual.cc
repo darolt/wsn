@@ -92,7 +92,7 @@ Individual::SampleNewGenes() {
 
 // getters & setters
 fitness_t
-Individual::GetFitness() {
+Individual::GetFitness() const {
   return fitness_;
 }
 
@@ -111,42 +111,4 @@ Individual::SetGenes(std::vector<char> value) {
   genes_ = value;
   optimizer_->Fitness(*this);
 }
-
-//fitness_t
-//Individual::UpdateFitness() {
-//  u_int nb_active_nodes = 0;
-//  for (unsigned int idx = 0; idx < optimizer_->nb_nodes_; idx++)
-//    if (genes_[idx] == 0 && optimizer_->energies_[idx] != 0.0) // active nodes
-//      nb_active_nodes++;
-//
-//  auto coverage_info = optimizer_->regions_->GetCoverage(genes_, optimizer_->energies_);
-//
-//  float total, term1 = 0.0, term2 = 0.0;
-//  if (nb_alive_nodes != 0)
-//    term1 = 1 - nb_active_nodes/float(optimizer_->nb_alive_nodes_);
-//
-//  if (coverage_info.total_coverage != 0.0)
-//    term2 = coverage_info.partial_coverage/coverage_info.total_coverage;
-//
-//  total = optimizer_->fitness_alpha_*term1 + optimizer_->fitness_beta_*term2;
-//
-//  fitness_ = {.total = total,
-//              .term1 = term1,
-//              .term2 = term2,
-//              .coverage_info = coverage_info};
-//
-//  // update if best fitness was improved
-//  if (days_alive_ == 0 || fitness_.total > best_fitness_.total)
-//    best_fitness_ = fitness_;
-//
-//  if (fresh_run_ == 1 || fitness_.total > best_global_.total) {
-//    best_global_ = fitness_;
-//    best_genes_ = genes_;
-//  }
-//
-//  days_alive_++;
-//  fresh_run_ = 0;
-//
-//  return fitness_;
-//}
 

@@ -1,0 +1,2 @@
+,coverage,nb_alive,nb_sleeping,overlapping
+0,8245.17871094,53,18,442.409973145

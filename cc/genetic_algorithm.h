@@ -27,15 +27,13 @@ class GeneticAlgorithm: public Optimizer {
 
     // individual1 copy parts of individual2 position depending on influence
     // rate and how far it is from individual2 (the farer the more copies) 
-    void Crossover(Individual &child,
-                   const vector<pair<u_int, float>> &sorted_fitness,
-                   u_int nb_unfit,
-                   const vector<u_int> &can_sleep,
-                   float crossover_rate);
+    Individual Crossover(u_int nb_unfit,
+                         const vector<u_int> &can_sleep);
 
     void Optimize(const vector<u_int> &can_sleep);
 
-    void SortFitness(vector<pair<u_int, float>> &sorted_fitness);
+    // sort population according to fitness value
+    void SortFitness();
 
     fitness_t Fitness(Individual &individual);
 };

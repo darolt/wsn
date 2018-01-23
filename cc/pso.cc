@@ -19,11 +19,9 @@ Pso::Optimize(const vector<u_int> &can_sleep) {
   // initialize velocity_
   velocity_ = vector<float_v>(nb_individuals_, float_v(nb_nodes_, 0.0));
 
-  for (u_int individual_idx = 0; individual_idx < nb_individuals_; individual_idx++) {
-    for(u_int idx = 0; idx < nb_nodes_; idx++) {
+  for (u_int individual_idx = 0; individual_idx < nb_individuals_; individual_idx++)
+    for(u_int idx = 0; idx < nb_nodes_; idx++)
       velocity_[individual_idx][idx] = distribution2(generator_);
-    }
-  }
 
   float acceleration = 1.0, phi1 = 2.0, phi2 = 2.0;
   for (u_int it = 0; it < max_iterations_; it++) {
@@ -82,19 +80,15 @@ Pso::Fitness(Individual &individual) {
                       fitness_beta_*term2  +
                       fitness_gamma_*term3;
 
-  fitness_t  fitness_ret = {.total = fitness_val,
-                            .term1 = term1,
-                            .term2 = term2,
-                            .coverage_info = coverage_info};
+  fitness_t fitness_ret = {.total = fitness_val,
+                           .term1 = term1,
+                           .term2 = term2,
+                           .coverage_info = coverage_info};
 
-  // update if best fitness was improved
-  //if (initial || fitness_.total > individual.best_fitness_.total)
-  //  individual.best_fitness_ = fitness_;
+  individual.SetFitness(fitness_ret);
 
   if (fitness_ret.total > best_global_.GetFitness().total)
     best_global_ = individual;
-
-  individual.SetFitness(fitness_ret);
 
   return fitness_ret;
 }

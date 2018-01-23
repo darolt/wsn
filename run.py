@@ -13,15 +13,14 @@ from python.network.aggregation_model import *
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
-if __name__ == '__main__':
+def run_scenarios():
   network  = Network()
 
-  aggregation_function = zero_cost_aggregation
-  #aggregation_function = linear_cost_aggregation(0.5)
-
   traces = {}
-
+  remaining_energies = []
+  average_energies = []
   scenario_names = {}
+
   for scenario in cf.scenarios:
     if type(scenario) is str:
       exec(scenario)
@@ -59,7 +58,41 @@ if __name__ == '__main__':
     logging.info(scenario_name + ': running scenario...')
     traces[scenario_name] = network.simulate()
 
+    remaining_energies.append(600.0 - network.get_remaining_energy())
+    average_energies.append(network.get_average_energy())
+
   if cf.TRACE_COVERAGE:
     print_coverage_info(traces)
 
+  print('Remaining energies: ')
+  print(remaining_energies)
+  print('Average energies: ')
+  print(average_energies)
+  return remaining_energies, average_energies
+
+def run_parameter_sweep():
+  
+  totals = {}
+  avgs = {}
+
+  for network_width in [400, 360, 320, 280, 240, 200, 160, 120, 80, 40]:
+    totals[network_width] = {}
+    avgs[network_width] = {}
+    for elec_energy in [100e-9, 80e-9, 60e-9, 40e-9, 20e-9]:
+      cf.AREA_WIDTH = network_width
+      cf.AREA_LENGTH = network_width
+      cf.BS_POS_X = network_width/2
+      cf.BS_POS_Y = network_width/2
+      cf.E_ELEC = elec_energy
+
+      remaining_energies, average_energies = run_scenarios()
+      totals[network_width][elec_energy] = remaining_energies
+      avgs[network_width][elec_energy] = average_energies
+
+  print(totals)
+  print(avgs)  
+
+if __name__ == '__main__':
+  #run_parameter_sweep()
+  run_scenarios()
 
