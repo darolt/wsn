@@ -1,5 +1,0 @@
-,30per_depletion,coverage (mean),coverage (stdev),final_fitness (mean),final_fitness (stdev),first_depletion,initial_fitness (mean),initial_fitness (stdev),nb_sleeping (mean),nb_sleeping (stdev),overlapping (mean),overlapping (stdev),scenario_name,term1_final (mean),term1_final (stdev),term1_initial (mean),term1_initial (stdev),term2_final (mean),term2_final (stdev),term2_initial (mean),term2_initial (stdev)
-0,2120,,,,,1739,,,,,,,LEACH,,,,,,,,
-1,8230,0.976568614068,0.0108221394591,0.819870078415,0.00608928155975,5364,0.760584732058,0.00860208037949,0.661987992979,0.0165100044739,0.0,0.0,FCMMPSO,0.663229631776,0.0150178959952,0.542027221295,0.0193901943863,0.976510525147,0.010839109872,0.979142242091,0.0151729595563
-2,4835,,,,,2576,,,,,,,DC,,,,,,,,
-3,353,,,,,37,,,,,,,MTE,,,,,,,,
